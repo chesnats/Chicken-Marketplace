@@ -9,19 +9,22 @@ use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\Buyer\OrderController as BuyerOrderController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
+        'canResetPassword' => Route::has('password.request'),
+        'status' => session('status'),
     ]);
-});
+})->name('home');
 
 Route::get('/dashboard', function () {
-    $user = auth()->user();
+    $user = Auth::user();
+
+    if (!$user) {
+        return redirect()->route('login');
+    }
     
     return Inertia::render('Dashboard', [
         'userRole' => $user->role,
@@ -53,6 +56,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::delete('/messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
     Route::delete('/messages/conversation/{user}', [MessageController::class, 'deleteConversation'])->name('messages.deleteConversation');
+    Route::post('/messages/{otherUserId}/read', [MessageController::class, 'markAsRead'])->name('messages.read');
 
     // Checkout/Purchases Routes
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
@@ -60,14 +64,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/buyer/orders/{id}/received', [BuyerOrderController::class, 'updateStatus'])->name('buyer.orders.updateStatus');
     Route::delete('/my-purchases/{id}', [BuyerOrderController::class, 'destroy'])->name('buyer.orders.destroy');
 
+    Route::patch('/listings/{listing}', [ListingController::class, 'update'])->name('listings.update');
+    Route::delete('/listings/{listing}', [ListingController::class, 'destroy'])->name('listings.destroy');
+    
+
     // 🔔 NOTIFICATION ROUTES (FIXED)
     Route::post('/notifications/{id}/read', function ($id) { 
-        auth()->user()->notifications()->findOrFail($id)->markAsRead(); 
+        $user = Auth::user();
+
+        $user->notifications()->findOrFail($id)->markAsRead(); 
         return back(); 
     })->name('notifications.markAsRead');
 
     Route::delete('/notifications/{id}', function ($id) {
-        auth()->user()->notifications()->where('id', $id)->delete();
+        $user = Auth::user();
+        $user->notifications()->where('id', $id)->delete();
         return back();
     })->name('notifications.destroy');
 });

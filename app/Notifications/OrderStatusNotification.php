@@ -9,8 +9,8 @@ class OrderStatusNotification extends Notification
 {
     use Queueable;
 
-    protected $item;
-    protected $status;
+    public $item;
+    public $status;
 
     public function __construct($item, $status)
     {

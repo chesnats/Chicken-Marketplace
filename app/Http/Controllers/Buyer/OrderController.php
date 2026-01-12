@@ -7,27 +7,32 @@ use App\Models\OrderItem;
 use App\Notifications\OrderStatusNotification;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
     public function index()
     {
-        // Get all order items that the logged-in user BOUGHT
+        // Use Auth::id() instead of auth()->id()
         $myOrders = OrderItem::whereHas('order', function ($query) {
-            $query->where('user_id', auth()->id());
-        })
-        ->with(['listing.user', 'order']) // Load the seller and order details
-        ->latest()
-        ->get();
-        auth()->user()->update(['last_orders_check_at' => now()]);
-        return Inertia::render('Buyer/Orders', [
-            'myOrders' => $myOrders
-        ]);
+                $query->where('user_id', Auth::id()); 
+            })
+            ->with(['listing.user', 'order'])
+            ->latest()
+            ->get();
+
+        // Use Auth::user() and check if it exists before updating
+        $user = Auth::user();
+        if ($user) {
+            $user->update(['last_orders_check_at' => now()]);
+        }
+
+        return Inertia::render('Buyer/Orders', ['myOrders' => $myOrders]);
     }
     public function destroy($id)
     {
         $item = OrderItem::whereHas('order', function ($query) {
-            $query->where('user_id', auth()->id());
+            $query->where('user_id', Auth::id()); 
         })->findOrFail($id);
 
         // If it's still pending, we allow "Cancellation" (Delete from DB)
@@ -42,7 +47,7 @@ class OrderController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $item = OrderItem::whereHas('order', function ($query) {
-            $query->where('user_id', auth()->id());
+            $query->where('user_id', Auth::id()); 
         })->with(['listing.user'])->findOrFail($id);
 
         $request->validate([

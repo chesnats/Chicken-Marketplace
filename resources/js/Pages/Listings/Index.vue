@@ -6,6 +6,9 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, useForm, router, Link } from '@inertiajs/vue3'; 
 import { ref, watch } from 'vue';
 
+const showingDeleteModal = ref(false);
+const listingToDelete = ref(null);
+
 const props = defineProps({ 
     listings: Array,
     canPost: Boolean,
@@ -21,6 +24,25 @@ watch(searchTerm, (value) => {
         replace: true 
     });
 });
+
+const confirmDeleteListing = (chicken) => {
+    listingToDelete.value = chicken;
+    showingDeleteModal.value = true;
+};
+
+const closeDeleteModal = () => {
+    showingDeleteModal.value = false;
+    listingToDelete.value = null;
+};
+
+const proceedWithDelete = () => {
+    if (listingToDelete.value) {
+        router.delete(route('listings.destroy', listingToDelete.value.id), {
+            preserveScroll: true,
+            onSuccess: () => closeDeleteModal(),
+        });
+    }
+};
 
 const form = useForm({
     breed: '',
@@ -64,10 +86,6 @@ const messageForm = useForm({
 });
 
 const openChat = (chicken) => {
-    // Debug: check if these are actually filling up
-    console.log("Receiver:", chicken.user_id);
-    console.log("Listing:", chicken.id);
-    
     messageForm.receiver_id = chicken.user_id;
     messageForm.listing_id = chicken.id; // <--- Make sure this isn't messageForm.id
     showingMessageModal.value = true;
@@ -89,6 +107,11 @@ const sendMessage = () => {
         }
     });
 };
+// Function to delete the listing
+const deleteListing = (id) => confirm('Delete this listing?') && router.delete(route('listings.destroy', id));
+
+// Function to toggle availability (Mark as Unavailable/Available)
+const toggleAvailability = (chicken) => router.patch(route('listings.update', chicken.id), { is_available: !chicken.is_available });
 </script>
 
 <template>
@@ -154,12 +177,14 @@ const sendMessage = () => {
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
                     <div v-for="chicken in listings" :key="chicken.id" class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 flex flex-col">
-                        
-                        <div class="h-48 w-full bg-gray-200">
-                            <img v-if="chicken.image" :src="'/storage/' + chicken.image" class="w-full h-full object-cover" />
-                            <div v-else class="flex items-center justify-center h-full text-gray-400 bg-orange-50 text-4xl">🐔</div>
-                        </div>
+                        <div class="h-48 w-full bg-gray-200 relative"> <img v-if="chicken.image" :src="'/storage/' + chicken.image" class="w-full h-full object-cover" />
+                                <div v-else class="flex items-center justify-center h-full text-gray-400 bg-orange-50 text-4xl">🐔</div>                     
+                                <div v-if="!chicken.is_available" class="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold px-2 rounded uppercase shadow-md z-10">
+                                    Not Available
+                                </div>
+                            </div>
 
                         <div class="p-5 flex flex-col flex-1">
                             <div class="flex justify-between items-start mb-2">
@@ -175,20 +200,62 @@ const sendMessage = () => {
                             <p class="text-gray-600 text-sm italic mb-6 flex-1 line-clamp-2">"{{ chicken.description }}"</p>
 
                             <div class="pt-4 border-t border-gray-100 space-y-2">
-                                <template v-if="userRole === 'buyer'">
-                                    <button @click="addToCart(chicken.id)" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">
-                                        🛒 Add to Cart
-                                    </button>
-                                    <button @click="openChat(chicken)" class="w-full border border-orange-600 text-orange-600 py-2 rounded-lg font-bold hover:bg-orange-50 transition">
-                                        💬 Message Seller
-                                    </button>
-                                </template>
                                 
-                                <template v-else-if="$page.props.auth.user && $page.props.auth.user.id === chicken.user_id">
-                                    <button class="w-full bg-gray-100 text-gray-500 py-2 rounded-lg font-bold cursor-default">
-                                        Your Listing
+                                <template v-if="userRole === 'buyer'">
+                                <button 
+                                    @click="addToCart(chicken.id)" 
+                                    :disabled="!chicken.is_available"
+                                    class="w-full py-2 rounded-lg font-bold transition flex items-center justify-center gap-2"
+                                    :class="chicken.is_available 
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
+                                >
+                                    <span v-if="chicken.is_available">🛒 Add to Cart</span>
+                                    <span v-else>🚫 Out of Stock</span>
+                                </button>
+
+                                <button @click="openChat(chicken)" class="w-full border border-orange-600 text-orange-600 py-2 rounded-lg font-bold hover:bg-orange-50 transition">
+                                    💬 Message Seller
+                                </button>
+                            </template>
+
+                            <template v-else-if="$page.props.auth.user && $page.props.auth.user.id === chicken.user_id">
+                                <div class="flex gap-2">
+                                    <button @click="toggleAvailability(chicken)" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-bold text-xs hover:bg-gray-200 transition">
+                                        {{ chicken.is_available ? '🚫 Mark Unavailable' : '✅ Mark Available' }}
                                     </button>
-                                </template>
+                                    
+                                    <button @click="confirmDeleteListing(chicken)" class="px-3 bg-red-50 text-red-600 py-2 rounded-lg font-bold text-xs hover:bg-red-100 transition">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </template>
+
+                            <Modal :show="showingDeleteModal" @close="closeDeleteModal">
+                                <div class="p-6">
+                                    <h2 class="text-lg font-medium text-gray-900">
+                                        Delete Listing
+                                    </h2>
+
+                                    <p class="mt-1 text-sm text-gray-600">
+                                        Are you sure you want to delete the listing for <strong>{{ listingToDelete?.breed }}</strong>? 
+                                        This action will permanently remove the chicken from the marketplace.
+                                    </p>
+
+                                    <div class="mt-6 flex justify-end">
+                                        <SecondaryButton @click="closeDeleteModal">
+                                            Cancel
+                                        </SecondaryButton>
+
+                                        <button
+                                            class="ms-3 inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                            @click="proceedWithDelete"
+                                        >
+                                            Delete Listing
+                                        </button>
+                                    </div>
+                                </div>
+                            </Modal>
                             </div>
                         </div>
                     </div>

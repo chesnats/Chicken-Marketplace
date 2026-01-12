@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Listing;
+use App\Models\Message; // 💡 Import the Message model
+use App\Models\Cart;    // 💡 Import the Cart model if you have one
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ListingController extends Controller
 {
@@ -14,7 +17,6 @@ class ListingController extends Controller
         $search = $request->input('search');
 
         return Inertia::render('Listings/Index', [
-            // Keep your search logic here
             'listings' => Listing::with('user')
                 ->when($search, function ($query, $search) {
                     $query->where('breed', 'like', "%{$search}%")
@@ -23,13 +25,11 @@ class ListingController extends Controller
                 ->latest()
                 ->get(),
             
-            // Add these new lines for the Buyer logic
             'canPost' => Auth::check(),
             'filters' => $request->only(['search']),
-            
-            // --- ADDED THESE ---
             'userRole' => Auth::user() ? Auth::user()->role : 'guest', 
-            'cartCount' => Auth::user()->carts()->count(),
+            // 💡 Fix: check if user exists before counting carts to prevent crash for guests
+            'cartCount' => Auth::user() ? Auth::user()->carts()->count() : 0,
         ]);
     }
 
@@ -42,12 +42,10 @@ class ListingController extends Controller
                 'age_weeks' => 'required|integer',
                 'location' => 'required|string',
                 'description' => 'required|string|min:10',
-                'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // Validate image
+                'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             ]);
 
-            // Handle Image Upload
             if ($request->hasFile('image')) {
-                // Stores in storage/app/public/listings
                 $path = $request->file('image')->store('listings', 'public');
                 $validated['image'] = $path;
             }
@@ -59,5 +57,44 @@ class ListingController extends Controller
         } catch (\Exception $e) {
             dd($e->getMessage()); 
         }
+    }
+
+public function update(Request $request, Listing $listing)
+    {
+        // Only the owner can change status
+        if ($listing->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $listing->update([
+            'is_available' => $request->is_available
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Remove the listing and its associated data.
+     */
+    public function destroy(Listing $listing)
+    {
+        // Only the owner can delete
+        if ($listing->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        // 1. Delete related child rows to satisfy foreign key constraints
+        Message::where('listing_id', $listing->id)->delete();
+        Cart::where('listing_id', $listing->id)->delete();
+
+        // 2. Delete the image file from storage if it exists
+        if ($listing->image) {
+            Storage::disk('public')->delete($listing->image);
+        }
+
+        // 3. Delete the listing itself
+        $listing->delete();
+
+        return back();
     }
 }

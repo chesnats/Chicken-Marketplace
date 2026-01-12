@@ -5,12 +5,14 @@ import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 
 const props = defineProps({ conversations: Array });
 
 const selectedConversation = ref(null);
 const bottomAnchor = ref(null);
+const page = usePage();
 
 // Modal states
 const confirmingMessageDeletion = ref(false);
@@ -22,6 +24,35 @@ const messageForm = useForm({
   receiver_id: null,
   listing_id: null,
   content: '',
+});
+
+// ---------------------------
+// Real-time Listener
+// ---------------------------
+onMounted(() => {
+    // 💡 This check prevents the crash that freezes your dropdown
+    if (!window.Echo) {
+        console.warn("Real-time listener skipped: Echo is not defined.");
+        return;
+    }
+
+    const userId = page.props.auth.user.id;
+    
+    window.Echo.private(`App.Models.User.${userId}`)
+        .listen('.MessageSent', (e) => {
+            router.reload({ 
+                only: ['conversations'],
+                onSuccess: () => {
+                    if (selectedConversation.value && e.message.sender_id === selectedConversation.value.other_user.id) {
+                         scrollToBottom(true);
+                    }
+                }
+            });
+        });
+});
+
+onUnmounted(() => {
+    window.Echo.leave(`App.Models.User.${page.props.auth.user.id}`);
 });
 
 // ---------------------------
@@ -75,7 +106,7 @@ const selectChat = async (chat) => {
   messageForm.receiver_id = chat.other_user.id;
   messageForm.listing_id = chat.last_message.listing_id;
 
-  const authUser = router.page.props.auth.user;
+  const authUser = page.props.auth.user;
   if (!chat.last_message.is_read && chat.last_message.receiver_id === authUser.id) {
     chat.last_message.is_read = 1;
     router.post(route('messages.read', chat.other_user.id), {}, { preserveScroll: true });
@@ -197,26 +228,31 @@ const deleteConversation = () => {
 
                 <div class="flex-1 flex flex-col bg-gray-50">
                     <template v-if="selectedConversation">
-                        <div class="p-4 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm z-10">
+                        <div class="relative p-4 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm z-50">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-xs font-bold text-orange-600 uppercase">
                                     {{ selectedConversation.other_user.name.charAt(0) }}
                                 </div>
                                 <div class="font-bold text-gray-800">{{ selectedConversation.other_user.name }}</div>
                             </div>
-
                             <Dropdown align="right" width="48">
                                 <template #trigger>
-                                    <button class="p-2 text-gray-400 hover:text-gray-600 transition rounded-full hover:bg-gray-100 focus:outline-none">
+                                    <button type="button" class="p-2 text-gray-400 hover:text-gray-600 transition rounded-full hover:bg-gray-100 focus:outline-none">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                         </svg>
                                     </button>
                                 </template>
                                 <template #content>
-                                    <button @click="confirmConversationDeletion(selectedConversation.other_user.id)" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
-                                        Delete Conversation
-                                    </button>
+                                    <div class="py-1 bg-white">
+                                        <button 
+                                            type="button"
+                                            @click="confirmConversationDeletion(selectedConversation.other_user.id)" 
+                                            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
+                                        >
+                                            Delete Conversation
+                                        </button>
+                                    </div>
                                 </template>
                             </Dropdown>
                         </div>

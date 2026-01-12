@@ -12,16 +12,26 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+    /** * We no longer use RegisteredUserController::class, 'create' 
+     * because the registration form is now part of Welcome.vue.
+     * We redirect back to the home page if someone types /register.
+     */
+    Route::get('register', function () {
+        return redirect('/'); 
+    })->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
+    /** * Same for login. If someone navigates to /login, 
+     * they are sent to the home page where the unified form is.
+     */
+    Route::get('login', function () {
+        return redirect('/');
+    })->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
+    // Forgot password and reset routes remain the same as they use separate pages
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 

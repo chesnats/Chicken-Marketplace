@@ -20,6 +20,7 @@ class Listing extends Model
         'location',
         'status',
         'image',
+        'is_available',
     ];
 
     /**

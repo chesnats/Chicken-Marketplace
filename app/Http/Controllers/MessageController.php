@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Message;
+use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
@@ -62,14 +63,15 @@ class MessageController extends Controller
             'content'     => 'required|string',
         ]);
 
-        Message::create([
+        $message = Message::create([
             'sender_id'   => Auth::id(),
-            'receiver_id' => $request->receiver_id,
-            'listing_id'  => $request->listing_id,
-            'content'     => $request->content,
+            'receiver_id' => $request->input('receiver_id'),
+            'listing_id'  => $request->input('listing_id'),
+            'content'     => $request->input('content'),
             'is_read'     => false,
         ]);
 
+        broadcast(new MessageSent($message))->toOthers();
         return redirect()->back();
     }
 
