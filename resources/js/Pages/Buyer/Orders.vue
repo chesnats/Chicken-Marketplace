@@ -3,14 +3,15 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue'; // Add this import
+import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 defineProps({ myOrders: Array });
 
-// Modal State
+// Modal States
 const showingDeleteModal = ref(false);
+const showingReceivedModal = ref(false);
 const selectedOrder = ref(null);
 
 const confirmRemove = (item) => {
@@ -18,18 +19,24 @@ const confirmRemove = (item) => {
     showingDeleteModal.value = true;
 };
 
-const closeDeleteModal = () => {
+const confirmReceived = (item) => {
+    selectedOrder.value = item;
+    showingReceivedModal.value = true;
+};
+
+const closeModals = () => {
     showingDeleteModal.value = false;
+    showingReceivedModal.value = false;
     selectedOrder.value = null;
 };
 
-// NEW: Function to mark order as received
-const markAsReceived = (id) => {
-    if (confirm('Confirm that you have received this order?')) {
-        router.post(route('buyer.orders.updateStatus', id), {
+const proceedWithMarkReceived = () => {
+    if (selectedOrder.value) {
+        router.post(route('buyer.orders.updateStatus', selectedOrder.value.id), {
             status: 'delivered'
         }, {
-            preserveScroll: true
+            preserveScroll: true,
+            onSuccess: () => closeModals(),
         });
     }
 };
@@ -38,7 +45,7 @@ const proceedWithDelete = () => {
     if (selectedOrder.value) {
         router.delete(route('buyer.orders.destroy', selectedOrder.value.id), {
             preserveScroll: true,
-            onSuccess: () => closeDeleteModal(),
+            onSuccess: () => closeModals(),
         });
     }
 };
@@ -103,7 +110,7 @@ const proceedWithDelete = () => {
                                     <td class="p-4">
                                         <PrimaryButton 
                                             v-if="item.status === 'on_delivery'"
-                                            @click="markAsReceived(item.id)"
+                                            @click="confirmReceived(item)" 
                                             class="!text-[10px] !py-1 !px-2 bg-green-600 hover:bg-green-700"
                                         >
                                             Order Received
@@ -119,10 +126,11 @@ const proceedWithDelete = () => {
 
                                     <td class="p-4 text-center">
                                         <button 
-                                            v-if="item.status === 'delivered'"
+                                            v-if="item.status === 'delivered' || item.status === 'pending'"
                                             @click="confirmRemove(item)"
-                                            class="text-gray-400 hover:text-red-600 transition"
-                                            title="Delete History"
+                                            class="transition"
+                                            :class="item.status === 'pending' ? 'text-orange-400 hover:text-orange-600' : 'text-gray-400 hover:text-red-600'"
+                                            :title="item.status === 'pending' ? 'Cancel Order' : 'Delete History'"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -138,15 +146,46 @@ const proceedWithDelete = () => {
             </div>
         </div>
 
-        <Modal :show="showingDeleteModal" @close="closeDeleteModal">
+        <Modal :show="showingDeleteModal" @close="closeModals">
             <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900">Remove from history?</h2>
+                <h2 class="text-lg font-medium text-gray-900">
+                    {{ selectedOrder?.status === 'pending' ? 'Cancel Purchase?' : 'Remove from history?' }}
+                </h2>
                 <p class="mt-1 text-sm text-gray-600">
-                    Are you sure you want to remove the record for <strong>{{ selectedOrder?.listing?.breed }}</strong>? This action cannot be undone.
+                    <span v-if="selectedOrder?.status === 'pending'">
+                        Are you sure you want to cancel your order for <strong>{{ selectedOrder?.listing?.breed }}</strong>? This will notify the seller and remove the item from your purchases.
+                    </span>
+                    <span v-else>
+                        Are you sure you want to remove the record for <strong>{{ selectedOrder?.listing?.breed }}</strong>? This action cannot be undone.
+                    </span>
                 </p>
                 <div class="mt-6 flex justify-end">
-                    <SecondaryButton @click="closeDeleteModal"> Cancel </SecondaryButton>
-                    <DangerButton class="ms-3" @click="proceedWithDelete"> Confirm Remove </DangerButton>
+                    <SecondaryButton @click="closeModals"> Back </SecondaryButton>
+                    <DangerButton class="ms-3" @click="proceedWithDelete"> 
+                         {{ selectedOrder?.status === 'pending' ? 'Yes, Cancel Order' : 'Confirm Remove' }}
+                    </DangerButton>
+                </div>
+            </div>
+        </Modal>
+
+        <Modal :show="showingReceivedModal" @close="closeModals">
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-2xl">✅</span>
+                    <h2 class="text-lg font-medium text-gray-900">Confirm Receipt</h2>
+                </div>
+                <p class="mt-1 text-sm text-gray-600">
+                    Have you successfully received your <strong>{{ selectedOrder?.listing?.breed }}</strong> from the seller? 
+                    This will mark the order as finished.
+                </p>
+                <div class="mt-6 flex justify-end">
+                    <SecondaryButton @click="closeModals"> Not Yet </SecondaryButton>
+                    <PrimaryButton 
+                        class="ms-3 bg-green-600 hover:bg-green-700" 
+                        @click="proceedWithMarkReceived"
+                    > 
+                        Yes, I Received It 
+                    </PrimaryButton>
                 </div>
             </div>
         </Modal>

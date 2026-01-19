@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue'; // Ensure you have this
+import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -11,19 +11,19 @@ const props = defineProps({
     cartItems: Array
 });
 
-// State for Removal Modal
+// --- State Management ---
 const confirmingItemRemoval = ref(false);
 const itemIdToRemove = ref(null);
-
-// State for Checkout Modal
 const confirmingCheckout = ref(false);
+const confirmingOrderFinal = ref(false); 
 
 const checkoutForm = useForm({
-    payment_method: 'cod', // Default selection
+    payment_method: 'cod',
     address: '',
     phone: '',
 });
 
+// --- Functions ---
 const confirmItemRemoval = (id) => {
     itemIdToRemove.value = id;
     confirmingItemRemoval.value = true;
@@ -32,6 +32,8 @@ const confirmItemRemoval = (id) => {
 const closeModal = () => {
     confirmingItemRemoval.value = false;
     confirmingCheckout.value = false;
+    confirmingOrderFinal.value = false;
+    checkoutForm.clearErrors();
 };
 
 const removeItem = () => {
@@ -44,12 +46,31 @@ const calculateTotal = () => {
     return props.cartItems.reduce((total, item) => total + parseFloat(item.listing.price), 0).toFixed(2);
 };
 
+const triggerFinalConfirmation = () => {
+    // Basic validation check
+    if (!checkoutForm.address || !checkoutForm.phone) {
+        checkoutForm.post(route('checkout.store')); // Trigger server errors
+        return;
+    }
+    confirmingCheckout.value = false;
+    confirmingOrderFinal.value = true;
+};
+
 const processCheckout = () => {
     checkoutForm.post(route('checkout.store'), {
+        preserveScroll: true,
         onSuccess: () => {
-            confirmingCheckout.value = false;
-            alert('Order placed successfully!');
+            // 1. Reset state
+            confirmingOrderFinal.value = false;
+            checkoutForm.reset();
+            
+            // 2. Immediate automatic redirect
+            router.visit(route('buyer.orders.index'));
         },
+        onError: () => {
+            confirmingOrderFinal.value = false;
+            confirmingCheckout.value = true;
+        }
     });
 };
 </script>
@@ -82,13 +103,8 @@ const processCheckout = () => {
                         </div>
 
                         <div class="mt-8 pt-6 border-t flex justify-between items-center">
-                            <div>
-                                <p class="text-lg font-bold">Total: ₱{{ calculateTotal() }}</p>
-                            </div>
-                            <button 
-                                @click="confirmingCheckout = true"
-                                class="bg-orange-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-700 transition"
-                            >
+                            <p class="text-lg font-bold">Total: ₱{{ calculateTotal() }}</p>
+                            <button @click="confirmingCheckout = true" class="bg-orange-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-700 transition">
                                 Proceed to Checkout
                             </button>
                         </div>
@@ -96,7 +112,7 @@ const processCheckout = () => {
                 </div>
 
                 <div v-else class="text-center py-20 bg-white rounded-xl border-2 border-dashed">
-                    <p class="text-4xl mb-4">🛒</p>
+                    <p class="text-4xl mb-4">🐣</p>
                     <h3 class="text-lg font-bold">Your cart is empty</h3>
                     <Link :href="route('listings.index')" class="text-orange-600 font-bold hover:underline">Go find some chickens!</Link>
                 </div>
@@ -115,60 +131,48 @@ const processCheckout = () => {
 
         <Modal :show="confirmingCheckout" @close="closeModal" maxWidth="md">
             <div class="p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-4 text-center">Complete Your Order</h2>
-                
-                <form @submit.prevent="processCheckout" class="space-y-4">
+                <h2 class="text-xl font-bold text-gray-900 mb-4 text-center">Shipping Details</h2>
+                <form @submit.prevent="triggerFinalConfirmation" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Delivery Address</label>
-                        <input v-model="checkoutForm.address" required type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500" placeholder="Street, City, Province" />
+                        <input v-model="checkoutForm.address" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500" :class="{'border-red-500': checkoutForm.errors.address}" placeholder="Street, City, Province" />
+                        <div v-if="checkoutForm.errors.address" class="text-red-500 text-xs mt-1">{{ checkoutForm.errors.address }}</div>
                     </div>
-
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                        <input v-model="checkoutForm.phone" required type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500" placeholder="09123456789" />
+                        <input v-model="checkoutForm.phone" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500" :class="{'border-red-500': checkoutForm.errors.phone}" placeholder="09123456789" />
+                        <div v-if="checkoutForm.errors.phone" class="text-red-500 text-xs mt-1">{{ checkoutForm.errors.phone }}</div>
                     </div>
-
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Payment Method</label>
-                        <div class="grid grid-cols-1 gap-3">
-                            <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50" :class="{'border-orange-500 bg-orange-50': checkoutForm.payment_method === 'cod'}">
-                                <input type="radio" v-model="checkoutForm.payment_method" value="cod" class="hidden" />
-                                <span class="text-2xl mr-3">🚚</span>
-                                <div>
-                                    <p class="font-bold text-sm">Cash on Delivery</p>
-                                    <p class="text-xs text-gray-500">Pay when you receive your chicken</p>
-                                </div>
-                            </label>
-
-                            <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50" :class="{'border-blue-500 bg-blue-50': checkoutForm.payment_method === 'gcash'}">
-                                <input type="radio" v-model="checkoutForm.payment_method" value="gcash" class="hidden" />
-                                <span class="text-2xl mr-3">🔵</span>
-                                <div>
-                                    <p class="font-bold text-sm">GCash</p>
-                                    <p class="text-xs text-gray-500">Pay via GCash e-wallet</p>
-                                </div>
-                            </label>
-
-                            <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50" :class="{'border-indigo-500 bg-indigo-50': checkoutForm.payment_method === 'paymaya'}">
-                                <input type="radio" v-model="checkoutForm.payment_method" value="paymaya" class="hidden" />
-                                <span class="text-2xl mr-3">🟢</span>
-                                <div>
-                                    <p class="font-bold text-sm">Maya</p>
-                                    <p class="text-xs text-gray-500">Pay via Maya e-wallet</p>
-                                </div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                        <div class="grid grid-cols-1 gap-2">
+                            <label v-for="method in ['cod', 'gcash', 'paymaya', 'bank_transfer', 'otc']" :key="method"
+                                class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                                :class="{'border-orange-500 bg-orange-50 ring-1 ring-orange-500': checkoutForm.payment_method === method}">
+                                <input type="radio" v-model="checkoutForm.payment_method" :value="method" class="hidden" />
+                                <span class="text-xl mr-3">{{ method === 'cod' ? '🚚' : (method === 'gcash' ? '🔵' : (method === 'bank_transfer' ? '🏦' : '🏪')) }}</span>
+                                <span class="font-bold text-sm uppercase">{{ method.replace('_', ' ') }}</span>
                             </label>
                         </div>
                     </div>
-
                     <div class="mt-6 flex flex-col gap-2">
-                        <PrimaryButton class="w-full justify-center py-3 bg-orange-600 hover:bg-orange-700" :disabled="checkoutForm.processing">
-                            Confirm Order (₱{{ calculateTotal() }})
-                        </PrimaryButton>
-                        <SecondaryButton class="w-full justify-center" @click="closeModal"> 
-                            Cancel 
-                        </SecondaryButton>
+                        <PrimaryButton class="w-full justify-center py-3 bg-orange-600">Confirm Details</PrimaryButton>
+                        <SecondaryButton class="w-full justify-center" @click="closeModal">Cancel</SecondaryButton>
                     </div>
                 </form>
+            </div>
+        </Modal>
+
+        <Modal :show="confirmingOrderFinal" @close="confirmingOrderFinal = false" maxWidth="sm">
+            <div class="p-6 text-center">
+                <h2 class="text-lg font-bold text-gray-900">Place this order?</h2>
+                <p class="mt-2 text-sm text-gray-600">Total: <span class="font-bold text-green-600">₱{{ calculateTotal() }}</span></p>
+                <div class="mt-6 flex flex-col gap-2">
+                    <PrimaryButton class="w-full justify-center bg-orange-600 hover:bg-orange-700" @click="processCheckout" :disabled="checkoutForm.processing">
+                        Yes, Place Order
+                    </PrimaryButton>
+                    <SecondaryButton class="w-full justify-center" @click="confirmingOrderFinal = false">No, Edit Details</SecondaryButton>
+                </div>
             </div>
         </Modal>
     </AuthenticatedLayout>
