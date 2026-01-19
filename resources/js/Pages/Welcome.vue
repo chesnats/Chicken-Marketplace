@@ -50,7 +50,9 @@ const submitRegister = () => {
         
         <div class="hidden lg:flex lg:w-2/3 bg-orange-600 items-center justify-center p-16 text-white">
             <div class="max-w-2xl text-center">
-                <h1 class="text-6xl font-black mb-8">🐔</h1>
+                <div class="flex justify-center mb-8">
+                    <img src="chickenlogo.png" alt="Chicken Marketplace Logo" class="w-36 h-36" />
+                </div>
                 <h1 class="text-6xl font-extrabold mb-8 leading-tight">Premium Chicken Marketplace</h1>
                 <p class="text-2xl text-orange-100 font-medium">
                     The safest place to buy and sell quality breeds. <br>

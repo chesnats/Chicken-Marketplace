@@ -35,31 +35,26 @@ class ListingController extends Controller
 
     public function store(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'breed' => 'required|string|max:50',
-                'price' => 'required|numeric|min:1',
-                'age_weeks' => 'required|integer',
-                'location' => 'required|string',
-                'description' => 'required|string|min:10',
-                'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            ]);
+        $validated = $request->validate([
+            'breed' => 'required|string|max:50',
+            'price' => 'required|numeric|min:1',
+            'age_weeks' => 'required|integer',
+            'location' => 'required|string',
+            'description' => 'required|string|min:10', 
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
 
-            if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('listings', 'public');
-                $validated['image'] = $path;
-            }
-
-            $request->user()->listings()->create($validated);
-
-            return redirect()->route('listings.index');
-            
-        } catch (\Exception $e) {
-            dd($e->getMessage()); 
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('listings', 'public');
+            $validated['image'] = $path;
         }
+
+        $request->user()->listings()->create($validated);
+
+        return redirect()->route('listings.index');
     }
 
-public function update(Request $request, Listing $listing)
+    public function update(Request $request, Listing $listing)
     {
         // Only the owner can change status
         if ($listing->user_id !== Auth::id()) {
