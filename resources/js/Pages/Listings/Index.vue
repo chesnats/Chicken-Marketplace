@@ -165,8 +165,19 @@ const toggleAvailability = (chicken) => router.patch(route('listings.update', ch
                             <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Chicken Photo</label>
                             <input type="file" @input="form.image = $event.target.files[0]" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
                         </div>
-                        <div class="md:col-span-4">
-                            <textarea v-model="form.description" rows="2" placeholder="Describe health, behavior..." class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-orange-500"></textarea>
+                       <div class="md:col-span-4">
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Description</label>
+                            <textarea 
+                                v-model="form.description" 
+                                rows="2" 
+                                placeholder="Describe health, behavior..." 
+                                class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-orange-500"
+                                :class="{'border-red-500': form.errors.description}"
+                            ></textarea>
+                            
+                            <div v-if="form.errors.description" class="text-red-500 text-xs mt-1 font-semibold">
+                                {{ form.errors.description }}
+                            </div>
                         </div>
                         <div class="md:col-span-4 flex justify-end">
                             <button type="submit" :disabled="form.processing" class="bg-orange-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-700 transition">
