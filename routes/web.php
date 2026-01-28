@@ -7,7 +7,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\Buyer\OrderController as BuyerOrderController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -41,7 +41,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // 🐔 CHICKEN MARKETPLACE ROUTES
     Route::get('/listings', [ListingController::class, 'index'])->name('listings.index');
     Route::get('/listings/create', [ListingController::class, 'create'])->name('listings.create');
     Route::post('/listings', [ListingController::class, 'store'])->name('listings.store');
@@ -67,11 +66,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/listings/{listing}', [ListingController::class, 'update'])->name('listings.update');
     Route::delete('/listings/{listing}', [ListingController::class, 'destroy'])->name('listings.destroy');
     
-
-    // 🔔 NOTIFICATION ROUTES (FIXED)
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    Route::post('/notifications/mark-selected', [NotificationController::class, 'markSelectedAsRead'])->name('notifications.markSelectedAsRead');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])
+        ->name('notifications.destroy');
     Route::post('/notifications/{id}/read', function ($id) { 
         $user = Auth::user();
-
         $user->notifications()->findOrFail($id)->markAsRead(); 
         return back(); 
     })->name('notifications.markAsRead');
