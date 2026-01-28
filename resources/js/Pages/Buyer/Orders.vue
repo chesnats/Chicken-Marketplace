@@ -126,11 +126,11 @@ const proceedWithDelete = () => {
 
                                     <td class="p-4 text-center">
                                         <button 
-                                            v-if="item.status === 'delivered' || item.status === 'pending'"
+                                            v-if="!item.listing || item.status === 'delivered' || item.status === 'pending'"
                                             @click="confirmRemove(item)"
                                             class="transition"
                                             :class="item.status === 'pending' ? 'text-orange-400 hover:text-orange-600' : 'text-gray-400 hover:text-red-600'"
-                                            :title="item.status === 'pending' ? 'Cancel Order' : 'Delete History'"
+                                            :title="!item.listing ? 'Listing Deleted' : (item.status === 'pending' ? 'Cancel Order' : 'Delete History')"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -149,10 +149,13 @@ const proceedWithDelete = () => {
         <Modal :show="showingDeleteModal" @close="closeModals">
             <div class="p-6">
                 <h2 class="text-lg font-medium text-gray-900">
-                    {{ selectedOrder?.status === 'pending' ? 'Cancel Purchase?' : 'Remove from history?' }}
+                    {{ !selectedOrder?.listing ? 'Remove Unavailable Record?' : (selectedOrder?.status === 'pending' ? 'Cancel Purchase?' : 'Remove from history?') }}
                 </h2>
                 <p class="mt-1 text-sm text-gray-600">
-                    <span v-if="selectedOrder?.status === 'pending'">
+                    <span v-if="!selectedOrder?.listing">
+                        This listing is no longer available in the marketplace. You can remove this record from your purchase history.
+                    </span>
+                    <span v-else-if="selectedOrder?.status === 'pending'">
                         Are you sure you want to cancel your order for <strong>{{ selectedOrder?.listing?.breed }}</strong>? This will notify the seller and remove the item from your purchases.
                     </span>
                     <span v-else>
@@ -162,7 +165,7 @@ const proceedWithDelete = () => {
                 <div class="mt-6 flex justify-end">
                     <SecondaryButton @click="closeModals"> Back </SecondaryButton>
                     <DangerButton class="ms-3" @click="proceedWithDelete"> 
-                         {{ selectedOrder?.status === 'pending' ? 'Yes, Cancel Order' : 'Confirm Remove' }}
+                        {{ selectedOrder?.status === 'pending' ? 'Yes, Cancel Order' : 'Confirm Remove' }}
                     </DangerButton>
                 </div>
             </div>

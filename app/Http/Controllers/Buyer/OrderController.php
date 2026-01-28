@@ -13,15 +13,21 @@ class OrderController extends Controller
 {
     public function index()
     {
-        // Use Auth::id() instead of auth()->id()
+        // Fetch orders belonging to the buyer
         $myOrders = OrderItem::whereHas('order', function ($query) {
                 $query->where('user_id', Auth::id()); 
             })
-            ->with(['listing.user', 'order'])
+            ->with([
+                // Include listing details even if soft-deleted by seller
+                'listing' => function ($query) {
+                    $query->withTrashed()->with('user'); 
+                }, 
+                'order'
+            ])
             ->latest()
             ->get();
 
-        // Use Auth::user() and check if it exists before updating
+        // Clear the notification badge count for the buyer
         $user = Auth::user();
         if ($user) {
             $user->update(['last_orders_check_at' => now()]);
@@ -29,21 +35,21 @@ class OrderController extends Controller
 
         return Inertia::render('Buyer/Orders', ['myOrders' => $myOrders]);
     }
+
     public function destroy($id)
     {
         $item = OrderItem::whereHas('order', function ($query) {
             $query->where('user_id', Auth::id()); 
         })->findOrFail($id);
 
-        // If it's still pending, we allow "Cancellation" (Delete from DB)
-        // If it's delivered, we allow "Delete from view" (Delete from DB)
         if ($item->status === 'pending' || $item->status === 'delivered') {
-            $item->delete();
+            $item->delete(); 
             return redirect()->back()->with('success', 'Order updated successfully.');
         }
 
         return redirect()->back()->with('error', 'Cannot cancel an order that is already being processed.');
     }
+
     public function updateStatus(Request $request, $id)
     {
         $item = OrderItem::whereHas('order', function ($query) {
@@ -56,8 +62,10 @@ class OrderController extends Controller
 
         $item->update(['status' => 'delivered']);
 
-        // Notify the Seller that the buyer received the order
-        $item->listing->user->notify(new OrderStatusNotification($item, 'delivered'));
+        // ✅ Null-safe check before notifying
+        if ($item->listing && $item->listing->user) {
+            $item->listing->user->notify(new OrderStatusNotification($item, 'delivered'));
+        }
 
         return redirect()->back()->with('success', 'Order marked as received!');
     }

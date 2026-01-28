@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Listing;
-use App\Models\Message; // 💡 Import the Message model
-use App\Models\Cart;    // 💡 Import the Cart model if you have one
+use App\Models\Message;
+use App\Models\Cart;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +28,6 @@ class ListingController extends Controller
             'canPost' => Auth::check(),
             'filters' => $request->only(['search']),
             'userRole' => Auth::user() ? Auth::user()->role : 'guest', 
-            // 💡 Fix: check if user exists before counting carts to prevent crash for guests
             'cartCount' => Auth::user() ? Auth::user()->carts()->count() : 0,
         ]);
     }
