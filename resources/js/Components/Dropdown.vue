@@ -68,16 +68,19 @@ const toggle = (e) => {
             leave-from-class="opacity-100 scale-100"
             leave-to-class="opacity-0 scale-95"
         >
-            <div
-                v-show="open"
-                class="absolute z-50 mt-2 rounded-md shadow-lg"
-                :class="[widthClass, alignmentClasses]"
-            >
-                <div
-                    class="rounded-md ring-1 ring-black ring-opacity-5"
-                    :class="contentClasses"
-                >
-                    <slot name="content" />
+            <div v-show="open" class="z-50">
+                <!-- Mobile: bottom sheet full-width -->
+                <div class="fixed inset-x-0 bottom-0 rounded-t-lg bg-white shadow-lg sm:hidden">
+                    <div class="px-4 py-3 max-h-[60vh] overflow-y-auto" :class="contentClasses">
+                        <slot name="content" />
+                    </div>
+                </div>
+
+                <!-- Desktop: regular dropdown -->
+                <div class="hidden sm:block absolute mt-2 rounded-md shadow-lg" :class="[widthClass, alignmentClasses]">
+                    <div class="rounded-md ring-1 ring-black ring-opacity-5" :class="contentClasses">
+                        <slot name="content" />
+                    </div>
                 </div>
             </div>
         </Transition>
