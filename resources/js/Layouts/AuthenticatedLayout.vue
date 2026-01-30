@@ -145,6 +145,170 @@ const handleNotificationClick = (notif) => {
 </script>
 
 <template>
+    <!-- Mobile header: brand + quick icons + menu -->
+    <div class="flex items-center justify-between sm:hidden px-4 py-2 bg-white border-b">
+        <div class="flex items-center gap-3">
+            <Link href="/" class="text-lg font-bold text-indigo-600">Chicken Marketplace</Link>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <div v-if="$page.props.auth.user.role === 'buyer'" class="relative">
+                <Link :href="route('cart.index')" class="p-2 text-gray-400 hover:text-gray-600 transition block relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span v-if="$page.props.auth.cartCount > 0" class="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white border-2 border-white">
+                        {{ $page.props.auth.cartCount }}
+                    </span>
+                </Link>
+            </div>
+
+            <!-- Notifications (mobile) -->
+            <div class="relative">
+                <Dropdown align="right" width="48">
+                    <template #trigger>
+                        <button class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span v-if="unreadNotificationsCount > 0" class="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white border-2 border-white">
+                                {{ unreadNotificationsCount }}
+                            </span>
+                        </button>
+                    </template>
+
+                    <template #content>
+                        <!-- Reuse same notification content as desktop -->
+                        <div class="px-4 py-2 border-b bg-gray-50/50">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notifications</span>
+                                <div class="flex items-center gap-2">
+                                    <button v-if="selectedNotifications.length > 0" @click.stop="markSelectedAsRead" class="text-blue-600 hover:text-blue-800 transition relative group">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </button>
+
+                                    <button v-else-if="unreadNotificationsCount > 0" @click.stop="markAllAsRead" class="text-gray-400 hover:text-blue-600 transition relative group">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                                        </svg>
+                                    </button>
+                                    <button v-else-if="notifications.length > 0" @click.stop="deleteAllNotifications" class="text-red-400 hover:text-red-600 transition relative group">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div v-if="notifications.some(n => !n.read_at)" class="flex items-center gap-2">
+                                <input type="checkbox" :checked="isAllSelected" @change.stop="toggleSelectAll" @click.stop class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500 h-4 w-4 cursor-pointer" />
+                                <span class="text-[12px] text-gray-500">Select All Unread</span>
+                            </div>
+                        </div>
+
+                        <div class="max-h-96 overflow-y-auto custom-scrollbar px-2">
+                            <div v-if="notifications.length === 0" class="p-4 text-sm text-gray-500 text-center italic">
+                                No new updates
+                            </div>
+
+                            <div v-for="notif in (showAllNotifications ? notifications : notifications.slice(0, 5))" 
+                                :key="notif.id" 
+                                class="group relative flex items-center border-b last:border-0 hover:bg-gray-50 transition"
+                            >
+                                <input v-if="!notif.read_at" type="checkbox" v-model="selectedNotifications" :value="notif.id" class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500 h-4 w-4 cursor-pointer ms-2" @click.stop />
+                                <div v-else class="w-4 h-4 ms-2"></div>
+
+                                <button @click="handleNotificationClick(notif)" class="flex-1 text-left px-4 py-3 pr-10" :class="notif.read_at ? 'opacity-60' : 'font-semibold text-gray-900'">
+                                    <div class="flex items-start gap-2">
+                                        <div v-if="!notif.read_at" class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"></div>
+                                        <div class="flex-1">
+                                            <p class="text-xs leading-tight">{{ notif.data.message }}</p>
+                                            <p class="text-[10px] text-gray-400 mt-1 uppercase">{{ new Date(notif.created_at).toLocaleDateString() }}</p>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <button @click.stop="deleteNotification(notif.id)" class="absolute right-2 text-gray-300 hover:text-red-500 p-2 transition rounded-md hover:bg-red-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div v-if="notifications.length > 5" class="bg-gray-50 border-t sticky bottom-0">
+                            <button @click.stop="showAllNotifications = !showAllNotifications" class="w-full py-2 text-xs font-bold text-blue-600 hover:text-blue-800 transition text-center focus:outline-none">
+                                {{ showAllNotifications ? 'Show Less' : 'See All Notifications' }}
+                            </button>
+                        </div>
+                    </template>
+                </Dropdown>
+            </div>
+
+            <button
+                @click="showingNavigationDropdown = !showingNavigationDropdown"
+                class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none transition"
+                aria-label="Toggle navigation"
+            >
+                <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                    <path
+                        :class="{ 'hidden': showingNavigationDropdown, 'inline-flex': !showingNavigationDropdown }"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 6h16M4 12h16M4 18h16"
+                    />
+                    <path
+                        :class="{ 'hidden': !showingNavigationDropdown, 'inline-flex': showingNavigationDropdown }"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                    />
+                </svg>
+            </button>
+        </div>
+    </div>
+<div v-show="showingNavigationDropdown" class="sm:hidden border-t border-gray-200">
+    <div class="space-y-1 px-4 py-3">
+        <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
+            Dashboard
+        </ResponsiveNavLink>
+
+        <ResponsiveNavLink :href="route('listings.index')" :active="route().current('listings.index')">
+            Marketplace
+        </ResponsiveNavLink>
+
+        <ResponsiveNavLink :href="route('messages.index')" :active="route().current('messages.index')">
+            Messages
+        </ResponsiveNavLink>
+
+        <ResponsiveNavLink
+            v-if="$page.props.auth.user.role === 'seller'"
+            :href="route('seller.orders.index')"
+        >
+            Incoming Orders
+        </ResponsiveNavLink>
+
+        <ResponsiveNavLink
+            v-if="$page.props.auth.user.role === 'buyer'"
+            :href="route('buyer.orders.index')"
+        >
+            My Purchases
+        </ResponsiveNavLink>
+
+        <ResponsiveNavLink :href="route('profile.edit')">
+            Profile
+        </ResponsiveNavLink>
+
+        <ResponsiveNavLink :href="route('logout')" method="post" as="button">
+            Log Out
+        </ResponsiveNavLink>
+    </div>
+</div>
+
     <div>
         <div class="min-h-screen bg-gray-100">
             <nav class="border-b border-gray-100 bg-white">
@@ -229,8 +393,8 @@ const handleNotificationClick = (notif) => {
                                             </div>
 
                                             <div v-if="notifications.some(n => !n.read_at)" class="flex items-center gap-2">
-                                                <input type="checkbox" :checked="isAllSelected" @change.stop="toggleSelectAll" @click.stop class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500 h-3 w-3 cursor-pointer" />
-                                                <span class="text-[10px] text-gray-500">Select All Unread</span>
+                                                <input type="checkbox" :checked="isAllSelected" @change.stop="toggleSelectAll" @click.stop class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500 h-4 w-4 cursor-pointer" />
+                                                <span class="text-[12px] text-gray-500">Select All Unread</span>
                                             </div>
                                         </div>
                                         
@@ -243,8 +407,9 @@ const handleNotificationClick = (notif) => {
                                                 :key="notif.id" 
                                                 class="group relative flex items-center border-b last:border-0 hover:bg-gray-50 transition pl-2"
                                             >
-                                                <input v-if="!notif.read_at" type="checkbox" v-model="selectedNotifications" :value="notif.id" class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500 h-3 w-3 cursor-pointer" @click.stop />
-                                                <div v-else class="w-3 h-3 ml-2"></div> <button @click="handleNotificationClick(notif)" class="flex-1 text-left px-3 py-3 pr-10" :class="notif.read_at ? 'opacity-60' : 'font-semibold text-gray-900'">
+                                                <input v-if="!notif.read_at" type="checkbox" v-model="selectedNotifications" :value="notif.id" class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500 h-4 w-4 cursor-pointer ms-2" @click.stop />
+                                                <div v-else class="w-4 h-4 ms-2"></div>
+                                                <button @click="handleNotificationClick(notif)" class="flex-1 text-left px-4 py-3 pr-10" :class="notif.read_at ? 'opacity-60' : 'font-semibold text-gray-900'">
                                                     <div class="flex items-start gap-2">
                                                         <div v-if="!notif.read_at" class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500"></div>
                                                         <div class="flex-1">
@@ -300,7 +465,7 @@ const handleNotificationClick = (notif) => {
                 </div>
             </header>
 
-            <main><slot /></main>
+            <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"><slot /></main>
         </div>
     </div>
 </template>

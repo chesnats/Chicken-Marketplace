@@ -66,7 +66,8 @@ const proceedWithDelete = () => {
         <div class="py-12 bg-gray-50 min-h-screen">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-xl border">
-                    <div class="p-6 overflow-x-auto">
+                    <!-- Desktop table (visible on sm and up) -->
+                    <div class="hidden sm:block p-6 overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="border-b bg-gray-50">
@@ -141,6 +142,69 @@ const proceedWithDelete = () => {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Mobile cards (visible under sm) -->
+                    <div class="sm:hidden p-4 space-y-4">
+                        <div v-for="item in myOrders" :key="`mobile-${item.id}`" class="bg-white border rounded-lg p-4 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-xl">🐔</div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ item.listing?.breed }}</p>
+                                        <p class="text-xs text-gray-500">Order #{{ item.id }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-bold">{{ item.listing?.user?.name }}</p>
+                                    <p class="font-bold text-green-600">₱{{ item.price }}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex items-center justify-between">
+                                <div>
+                                    <span 
+                                        :class="{
+                                            'bg-orange-100 text-orange-700': item.status === 'pending',
+                                            'bg-blue-100 text-blue-700': item.status === 'accepted',
+                                            'bg-purple-100 text-purple-700': item.status === 'on_delivery',
+                                            'bg-green-100 text-green-700': item.status === 'delivered'
+                                        }" 
+                                        class="px-3 py-1 rounded-full font-bold uppercase text-[11px]"
+                                    >
+                                        {{ (item.status || 'pending').replace('_', ' ') }}
+                                    </span>
+                                </div>
+
+                                <div class="ms-3">
+                                    <button 
+                                        v-if="!item.listing || item.status === 'delivered' || item.status === 'pending'"
+                                        @click="confirmRemove(item)"
+                                        class="transition"
+                                        :class="item.status === 'pending' ? 'text-orange-400 hover:text-orange-600' : 'text-gray-400 hover:text-red-600'"
+                                        :title="!item.listing ? 'Listing Deleted' : (item.status === 'pending' ? 'Cancel Order' : 'Delete History')"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 grid gap-2">
+                                <PrimaryButton 
+                                    v-if="item.status === 'on_delivery'"
+                                    @click="confirmReceived(item)" 
+                                    class="w-full bg-green-600 hover:bg-green-700"
+                                >
+                                    Order Received
+                                </PrimaryButton>
+
+                                <div v-else-if="item.status === 'delivered'" class="text-green-600 font-bold text-sm uppercase text-center">✅ Finished</div>
+
+                                <div v-else class="text-gray-400 text-sm uppercase font-bold italic text-center">In Progress</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

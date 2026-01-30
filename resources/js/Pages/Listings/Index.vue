@@ -118,22 +118,41 @@ const toggleAvailability = (chicken) => router.patch(route('listings.update', ch
     <Head title="Marketplace" />
  
     <AuthenticatedLayout>
-        <template #header>
-            <div class="flex justify-between items-center">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    🐔 Chicken Marketplace 
-                    <span v-if="userRole === 'buyer'" class="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full uppercase tracking-wider">Buyer Mode</span>
-                    <span v-if="userRole === 'seller'" class="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full uppercase tracking-wider">Seller Mode</span>
+    <template #header>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            
+            <!-- Title + Role Badge -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                <h2 class="font-semibold text-lg sm:text-xl text-gray-800 leading-tight">
+                    🐔 Chicken Marketplace
                 </h2>
-                
-                <div class="flex items-center gap-4">
 
-                    <div class="w-64">
-                        <input v-model="searchTerm" type="text" placeholder="Search breeds..." class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-orange-500 text-sm">
-                    </div>
-                </div>
+                <span
+                    v-if="userRole === 'buyer'"
+                    class="w-fit text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full uppercase tracking-wider"
+                >
+                    Buyer Mode
+                </span>
+
+                <span
+                    v-if="userRole === 'seller'"
+                    class="w-fit text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full uppercase tracking-wider"
+                >
+                    Seller Mode
+                </span>
             </div>
-        </template>
+
+            <!-- Search -->
+            <div class="w-full sm:w-64">
+                <input
+                    v-model="searchTerm"
+                    type="text"
+                    placeholder="Search breeds..."
+                    class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm"
+                >
+            </div>
+        </div>
+    </template>
 
         <div class="py-12 bg-gray-50 min-h-screen">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
