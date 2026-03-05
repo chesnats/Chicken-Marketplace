@@ -23,6 +23,14 @@ const checkoutForm = useForm({
     phone: '',
 });
 
+const paymentOptions = [
+    { value: 'cod', label: 'Cash on Delivery', icon: 'truck' },
+    { value: 'gcash', label: 'GCash', icon: 'wallet' },
+    { value: 'paymaya', label: 'PayMaya', icon: 'card' },
+    { value: 'bank_transfer', label: 'Bank Transfer', icon: 'bank' },
+    { value: 'otc', label: 'Over the Counter', icon: 'store' },
+];
+
 // --- Functions ---
 const confirmItemRemoval = (id) => {
     itemIdToRemove.value = id;
@@ -47,11 +55,21 @@ const calculateTotal = () => {
 };
 
 const triggerFinalConfirmation = () => {
-    // Basic validation check
-    if (!checkoutForm.address || !checkoutForm.phone) {
-        checkoutForm.post(route('checkout.store')); // Trigger server errors
+    checkoutForm.clearErrors();
+
+    if (!checkoutForm.address || !checkoutForm.phone || !checkoutForm.payment_method) {
+        if (!checkoutForm.address) {
+            checkoutForm.setError('address', 'Delivery address is required.');
+        }
+        if (!checkoutForm.phone) {
+            checkoutForm.setError('phone', 'Phone number is required.');
+        }
+        if (!checkoutForm.payment_method) {
+            checkoutForm.setError('payment_method', 'Payment method is required.');
+        }
         return;
     }
+
     confirmingCheckout.value = false;
     confirmingOrderFinal.value = true;
 };
@@ -87,24 +105,23 @@ const processCheckout = () => {
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
                 <div v-if="cartItems.length > 0" class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border dark:border-gray-700">
                     <div class="p-6 space-y-4">
-                        <div v-for="item in cartItems" :key="item.id" class="flex items-center justify-between border-b dark:border-gray-700 pb-4 last:border-0">
-                            <div class="flex items-center gap-4">
+                        <div v-for="item in cartItems" :key="item.id" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b dark:border-gray-700 pb-4 last:border-0">
+                            <div class="flex items-center gap-4 min-w-0">
                                 <img v-if="item.listing.image" :src="'/storage/' + item.listing.image" class="w-16 h-16 object-cover rounded-lg" />
                                 <div v-else class="w-16 h-16 bg-orange-50 rounded-lg flex items-center justify-center text-2xl">🐔</div>
-                                <div>
-                                    <h4 class="font-bold text-gray-900 dark:text-gray-100">{{ item.listing.breed }}</h4>
+                                <div class="min-w-0"><h4 class="font-bold text-gray-900 dark:text-gray-100 truncate">{{ item.listing.breed }}</h4>
                                     <p class="text-sm text-gray-500 dark:text-gray-300">📍 {{ item.listing.location }}</p>
                                 </div>
                             </div>
-                            <div class="text-right">
+                            <div class="text-left sm:text-right">
                                 <p class="font-bold text-green-600">₱{{ item.listing.price }}</p>
                                 <button @click="confirmItemRemoval(item.id)" class="text-xs text-red-500 hover:underline">Remove</button>
                             </div>
                         </div>
 
-                        <div class="mt-8 pt-6 border-t dark:border-gray-700 flex justify-between items-center">
+                        <div class="mt-8 pt-6 border-t dark:border-gray-700 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
                             <p class="text-lg font-bold">Total: ₱{{ calculateTotal() }}</p>
-                            <button @click="confirmingCheckout = true" class="bg-orange-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-700 transition">
+                            <button @click="confirmingCheckout = true" class="w-full sm:w-auto bg-orange-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-700 transition">
                                 Proceed to Checkout
                             </button>
                         </div>
@@ -146,13 +163,21 @@ const processCheckout = () => {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
                         <div class="grid grid-cols-1 gap-2">
-                            <label v-for="method in ['cod', 'gcash', 'paymaya', 'bank_transfer', 'otc']" :key="method"
+                            <label
+                                v-for="method in paymentOptions"
+                                :key="method.value"
                                 class="flex items-center p-3 border dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                                :class="{'border-orange-500 bg-orange-50 ring-1 ring-orange-500': checkoutForm.payment_method === method}">
-                                <input type="radio" v-model="checkoutForm.payment_method" :value="method" class="hidden" />
-                                <span class="text-xl mr-3">{{ method === 'cod' ? '🚚' : (method === 'gcash' ? '🔵' : (method === 'bank_transfer' ? '🏦' : '🏪')) }}</span>
-                                <span class="font-bold text-sm uppercase">{{ method.replace('_', ' ') }}</span>
+                                :class="{ 'border-orange-500 bg-orange-50 ring-1 ring-orange-500': checkoutForm.payment_method === method.value }"
+                            >
+                                <input type="radio" v-model="checkoutForm.payment_method" :value="method.value" class="hidden" />
+                                <span class="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 mr-3">
+                                    {{ method.icon }}
+                                </span>
+                                <span class="font-bold text-sm">{{ method.label }}</span>
                             </label>
+                        </div>
+                        <div v-if="checkoutForm.errors.payment_method" class="text-red-500 text-xs mt-1">
+                            {{ checkoutForm.errors.payment_method }}
                         </div>
                     </div>
                     <div class="mt-6 flex flex-col gap-2">
@@ -177,3 +202,8 @@ const processCheckout = () => {
         </Modal>
     </AuthenticatedLayout>
 </template>
+
+
+
+
+

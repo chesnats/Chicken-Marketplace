@@ -54,6 +54,11 @@ const proceedWithDelete = () => {
         });
     }
 };
+
+const formatPaymentMethod = (method) => {
+    if (!method) return 'N/A';
+    return method.replace('_', ' ').toUpperCase();
+};
 </script>
 
 <template>
@@ -61,7 +66,7 @@ const proceedWithDelete = () => {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight dark:text-gray-100">👨‍🌾 Incoming Orders</h2>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight dark:text-gray-100">Incoming Orders</h2>
                 <span class="bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-1 rounded-md text-xs font-bold">
                     {{ incomingOrders.length }} Total
                 </span>
@@ -99,7 +104,7 @@ const proceedWithDelete = () => {
                                         <p class="text-sm text-gray-700 italic">📍 {{ item.order?.address }}</p>
                                     </td>
                                     <td class="p-4 uppercase text-xs font-bold text-gray-500">
-                                        {{ item.order?.payment_method }}
+                                        {{ formatPaymentMethod(item.order?.payment_method) }}
                                     </td>
                                     <td class="p-4 text-center">
                                         <span 
@@ -167,7 +172,7 @@ const proceedWithDelete = () => {
                                     <p class="text-sm text-gray-600 dark:text-gray-300">📞 {{ item.order?.phone }}</p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-xs text-gray-500 dark:text-gray-300">{{ item.order?.payment_method }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-300">{{ formatPaymentMethod(item.order?.payment_method) }}</p>
                                     <p class="font-bold text-green-600">₱{{ item.price }}</p>
                                 </div>
                             </div>

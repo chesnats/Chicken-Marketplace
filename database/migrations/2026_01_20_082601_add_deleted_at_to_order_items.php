@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('order_items', function (Blueprint $table) {
-            // ✅ This creates the column that Laravel is looking for
-            $table->softDeletes(); 
-        });
+        if (!Schema::hasColumn('order_items', 'deleted_at')) {
+            Schema::table('order_items', function (Blueprint $table) {
+                $table->softDeletes();
+            });
+        }
     }
 
     /**
@@ -22,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('order_items', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasColumn('order_items', 'deleted_at')) {
+            Schema::table('order_items', function (Blueprint $table) {
+                $table->dropSoftDeletes();
+            });
+        }
     }
 };

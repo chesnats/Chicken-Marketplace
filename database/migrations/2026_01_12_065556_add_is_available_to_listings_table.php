@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('listings', function (Blueprint $table) {
-            $table->boolean('is_available')->default(true)->after('description');
-        });
+        if (!Schema::hasColumn('listings', 'is_available')) {
+            Schema::table('listings', function (Blueprint $table) {
+                $table->boolean('is_available')->default(true)->after('description');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('listings', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasColumn('listings', 'is_available')) {
+            Schema::table('listings', function (Blueprint $table) {
+                $table->dropColumn('is_available');
+            });
+        }
     }
 };

@@ -219,9 +219,9 @@ const deleteConversation = () => {
     <Head title="Messages" />
     <AuthenticatedLayout>
         <div class=" mx-auto max-w-6xl py-6">
-            <div class="flex h-[calc(100vh-64px)] bg-white dark:bg-gray-800 overflow-hidden relative rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="flex h-[calc(100vh-120px)] md:h-[calc(100vh-64px)] bg-white dark:bg-gray-800 overflow-hidden relative rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
                 
-                <div class="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+                <div class="w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col" :class="selectedConversation ? 'hidden md:flex' : 'flex'">
                     <div class="p-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Messages</h2>
                         <input type="text" placeholder="Search messages..." class="mt-3 w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:ring-orange-500 shadow-sm" />
@@ -272,10 +272,19 @@ const deleteConversation = () => {
                     </div>
                 </div>
 
-                <div class="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
+                <div class="flex-1 flex-col bg-gray-50 dark:bg-gray-900" :class="selectedConversation ? 'flex' : 'hidden md:flex'">
                     <template v-if="selectedConversation">
                         <div class="relative p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shadow-sm z-50">
                             <div class="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    class="md:hidden p-1 rounded text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    @click="selectedConversation = null"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
                                 <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-xs font-bold text-orange-600 uppercase">
                                     {{ selectedConversation.other_user.name.charAt(0) }}
                                 </div>
@@ -316,7 +325,7 @@ const deleteConversation = () => {
                                     class="flex group mb-4"
                                     :class="msg.sender_id === $page.props.auth.user.id ? 'justify-end' : 'justify-start'"
                                 >
-                                    <div class="flex flex-col max-w-[70%]" :class="msg.sender_id === $page.props.auth.user.id ? 'items-end' : 'items-start'">
+                                    <div class="flex flex-col max-w-[85%] md:max-w-[70%]" :class="msg.sender_id === $page.props.auth.user.id ? 'items-end' : 'items-start'">
                                         <div 
                                             class="p-3 rounded-2xl text-sm"
                                             :class="msg.sender_id === $page.props.auth.user.id 

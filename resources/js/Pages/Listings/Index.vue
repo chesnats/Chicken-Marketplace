@@ -169,7 +169,7 @@ const toggleAvailability = (chicken) => router.patch(route('listings.update', ch
             <!-- Title + Role Badge -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:gap-3">
                 <h2 class="font-semibold text-lg sm:text-xl text-gray-800 dark:text-gray-100 leading-tight">
-                    🐔 Chicken Marketplace
+                    Chicken Marketplace
                 </h2>
 
                 <span
