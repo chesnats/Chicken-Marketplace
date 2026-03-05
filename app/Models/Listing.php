@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 class Listing extends Model
 {
     use HasFactory;
@@ -21,6 +22,7 @@ class Listing extends Model
         'status',
         'image',
         'is_available',
+        'views_count',
     ];
 
     /**
@@ -29,5 +31,14 @@ class Listing extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::forceDeleted(function (Listing $listing) {
+            if ($listing->image) {
+                Storage::disk('public')->delete($listing->image);
+            }
+        });
     }
 }

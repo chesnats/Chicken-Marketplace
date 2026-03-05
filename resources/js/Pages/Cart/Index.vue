@@ -80,20 +80,20 @@ const processCheckout = () => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">🛒 My Shopping Cart</h2>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">🛒 My Shopping Cart</h2>
         </template>
 
-        <div class="py-12 bg-gray-50 min-h-screen">
+        <div class="py-12 bg-gray-50 min-h-screen dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border border-gray-200 dark:border-gray-700">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                <div v-if="cartItems.length > 0" class="bg-white overflow-hidden shadow-sm sm:rounded-xl border">
+                <div v-if="cartItems.length > 0" class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border dark:border-gray-700">
                     <div class="p-6 space-y-4">
-                        <div v-for="item in cartItems" :key="item.id" class="flex items-center justify-between border-b pb-4 last:border-0">
+                        <div v-for="item in cartItems" :key="item.id" class="flex items-center justify-between border-b dark:border-gray-700 pb-4 last:border-0">
                             <div class="flex items-center gap-4">
                                 <img v-if="item.listing.image" :src="'/storage/' + item.listing.image" class="w-16 h-16 object-cover rounded-lg" />
                                 <div v-else class="w-16 h-16 bg-orange-50 rounded-lg flex items-center justify-center text-2xl">🐔</div>
                                 <div>
-                                    <h4 class="font-bold text-gray-900">{{ item.listing.breed }}</h4>
-                                    <p class="text-sm text-gray-500">📍 {{ item.listing.location }}</p>
+                                    <h4 class="font-bold text-gray-900 dark:text-gray-100">{{ item.listing.breed }}</h4>
+                                    <p class="text-sm text-gray-500 dark:text-gray-300">📍 {{ item.listing.location }}</p>
                                 </div>
                             </div>
                             <div class="text-right">
@@ -102,7 +102,7 @@ const processCheckout = () => {
                             </div>
                         </div>
 
-                        <div class="mt-8 pt-6 border-t flex justify-between items-center">
+                        <div class="mt-8 pt-6 border-t dark:border-gray-700 flex justify-between items-center">
                             <p class="text-lg font-bold">Total: ₱{{ calculateTotal() }}</p>
                             <button @click="confirmingCheckout = true" class="bg-orange-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-orange-700 transition">
                                 Proceed to Checkout
@@ -111,7 +111,7 @@ const processCheckout = () => {
                     </div>
                 </div>
 
-                <div v-else class="text-center py-20 bg-white rounded-xl border-2 border-dashed">
+                <div v-else class="text-center py-20 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed dark:border-gray-700">
                     <p class="text-4xl mb-4">🐣</p>
                     <h3 class="text-lg font-bold">Your cart is empty</h3>
                     <Link :href="route('listings.index')" class="text-orange-600 font-bold hover:underline">Go find some chickens!</Link>
@@ -121,7 +121,7 @@ const processCheckout = () => {
 
         <Modal :show="confirmingItemRemoval" @close="closeModal" maxWidth="sm">
             <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900">Remove from cart?</h2>
+                <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Remove from cart?</h2>
                 <div class="mt-6 flex justify-end">
                     <SecondaryButton @click="closeModal"> Cancel </SecondaryButton>
                     <DangerButton class="ms-3" @click="removeItem"> Remove </DangerButton>
@@ -131,23 +131,23 @@ const processCheckout = () => {
 
         <Modal :show="confirmingCheckout" @close="closeModal" maxWidth="md">
             <div class="p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-4 text-center">Shipping Details</h2>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 text-center">Shipping Details</h2>
                 <form @submit.prevent="triggerFinalConfirmation" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Delivery Address</label>
-                        <input v-model="checkoutForm.address" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500" :class="{'border-red-500': checkoutForm.errors.address}" placeholder="Street, City, Province" />
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Delivery Address</label>
+                        <input v-model="checkoutForm.address" type="text" class="mt-1 block w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:ring-orange-500" :class="{'border-red-500': checkoutForm.errors.address}" placeholder="Street, City, Province" />
                         <div v-if="checkoutForm.errors.address" class="text-red-500 text-xs mt-1">{{ checkoutForm.errors.address }}</div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                        <input v-model="checkoutForm.phone" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500" :class="{'border-red-500': checkoutForm.errors.phone}" placeholder="09123456789" />
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
+                        <input v-model="checkoutForm.phone" type="text" class="mt-1 block w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:ring-orange-500" :class="{'border-red-500': checkoutForm.errors.phone}" placeholder="09123456789" />
                         <div v-if="checkoutForm.errors.phone" class="text-red-500 text-xs mt-1">{{ checkoutForm.errors.phone }}</div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
                         <div class="grid grid-cols-1 gap-2">
                             <label v-for="method in ['cod', 'gcash', 'paymaya', 'bank_transfer', 'otc']" :key="method"
-                                class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                                class="flex items-center p-3 border dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                                 :class="{'border-orange-500 bg-orange-50 ring-1 ring-orange-500': checkoutForm.payment_method === method}">
                                 <input type="radio" v-model="checkoutForm.payment_method" :value="method" class="hidden" />
                                 <span class="text-xl mr-3">{{ method === 'cod' ? '🚚' : (method === 'gcash' ? '🔵' : (method === 'bank_transfer' ? '🏦' : '🏪')) }}</span>
@@ -165,8 +165,8 @@ const processCheckout = () => {
 
         <Modal :show="confirmingOrderFinal" @close="confirmingOrderFinal = false" maxWidth="sm">
             <div class="p-6 text-center">
-                <h2 class="text-lg font-bold text-gray-900">Place this order?</h2>
-                <p class="mt-2 text-sm text-gray-600">Total: <span class="font-bold text-green-600">₱{{ calculateTotal() }}</span></p>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Place this order?</h2>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Total: <span class="font-bold text-green-600">₱{{ calculateTotal() }}</span></p>
                 <div class="mt-6 flex flex-col gap-2">
                     <PrimaryButton class="w-full justify-center bg-orange-600 hover:bg-orange-700" @click="processCheckout" :disabled="checkoutForm.processing">
                         Yes, Place Order

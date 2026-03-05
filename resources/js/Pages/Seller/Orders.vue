@@ -61,38 +61,38 @@ const proceedWithDelete = () => {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">👨‍🌾 Incoming Orders</h2>
-                <span class="bg-orange-100 text-orange-700 px-2 py-1 rounded-md text-xs font-bold">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight dark:text-gray-100">👨‍🌾 Incoming Orders</h2>
+                <span class="bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-1 rounded-md text-xs font-bold">
                     {{ incomingOrders.length }} Total
                 </span>
             </div>
         </template>
 
-        <div class="py-12 bg-gray-50 min-h-screen">
+        <div class="py-12 bg-gray-50 min-h-screen dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border border-gray-200 dark:border-gray-700">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-xl border">
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border border-gray-200 dark:border-gray-700">
                     <!-- Desktop table (visible on sm and up) -->
-                    <div class="hidden sm:block p-6 overflow-x-auto">
+                    <div class="hidden sm:block p-6 overflow-x-auto border-gray-200 dark:border-gray-700 dark:bg-gray-800">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="border-b bg-gray-50">
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500">Buyer</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500">Chicken</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500">Address</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500">Payment</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 text-center">Status</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 text-center">Action</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 text-center">Remove</th>
+                                <tr class="border-b bg-gray-50 dark:bg-gray-600 dark:border-gray-500">
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white">Buyer</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white">Chicken</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white">Address</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white">Payment</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white text-center">Status</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white text-center">Action</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 text-center dark:text-white">Remove</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="item in incomingOrders" :key="item.id" class="hover:bg-gray-50">
+                                <tr v-for="item in incomingOrders" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
                                     <td class="p-4">
-                                        <p class="font-bold text-gray-900">{{ item.order?.user?.name || 'Unknown' }}</p>
-                                        <p class="text-sm text-gray-600">📞 {{ item.order?.phone }}</p>
+                                        <p class="font-bold text-gray-900 dark:text-gray-100">{{ item.order?.user?.name || 'Unknown' }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-300">📞 {{ item.order?.phone }}</p>
                                     </td>
                                     <td class="p-4">
-                                        <p class="font-medium text-gray-900">{{ item.listing?.breed }}</p>
+                                        <p class="font-medium text-gray-900 dark:text-gray-100">{{ item.listing?.breed }}</p>
                                         <p class="text-xs text-green-600 font-bold">₱{{ item.price }}</p>
                                     </td>
                                     <td class="p-4">
@@ -160,21 +160,21 @@ const proceedWithDelete = () => {
 
                     <!-- Mobile cards (visible under sm) -->
                     <div class="sm:hidden p-4 space-y-4">
-                        <div v-for="item in incomingOrders" :key="`mobile-${item.id}`" class="bg-white border rounded-lg p-4 shadow-sm">
+                        <div v-for="item in incomingOrders" :key="`mobile-${item.id}`" class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow-sm">
                             <div class="flex items-start justify-between">
                                 <div>
-                                    <p class="font-bold text-gray-900">{{ item.order?.user?.name || 'Unknown' }}</p>
-                                    <p class="text-sm text-gray-600">📞 {{ item.order?.phone }}</p>
+                                    <p class="font-bold text-gray-900 dark:text-gray-100">{{ item.order?.user?.name || 'Unknown' }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">📞 {{ item.order?.phone }}</p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-xs text-gray-500">{{ item.order?.payment_method }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-300">{{ item.order?.payment_method }}</p>
                                     <p class="font-bold text-green-600">₱{{ item.price }}</p>
                                 </div>
                             </div>
 
                             <div class="mt-3">
-                                <p class="font-medium text-gray-900">{{ item.listing?.breed }}</p>
-                                <p class="text-xs text-gray-500 italic mt-1">📍 {{ item.order?.address }}</p>
+                                <p class="font-medium text-gray-900 dark:text-gray-100">{{ item.listing?.breed }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-300 italic mt-1">📍 {{ item.order?.address }}</p>
                             </div>
 
                             <div class="mt-3 flex items-center justify-between">
@@ -230,8 +230,8 @@ const proceedWithDelete = () => {
 
         <Modal :show="showingStatusModal" @close="closeModal">
             <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900">Update Order Status</h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Update Order Status</h2>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
                     Are you sure you want to change the status to 
                     <span class="font-bold uppercase text-orange-600">{{ pendingStatus.replace('_', ' ') }}</span>?
                 </p>
@@ -244,8 +244,8 @@ const proceedWithDelete = () => {
 
         <Modal :show="showingDeleteModal" @close="closeModal">
             <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900">Delete Order Record</h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Delete Order Record</h2>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
                     Are you sure you want to remove the record for <strong>{{ selectedOrder?.listing?.breed }}</strong>? This action cannot be undone.
                 </p>
                 <div class="mt-6 flex justify-end">

@@ -41,13 +41,15 @@ Route::post('/login', function (Request $request) {
     Route::middleware('auth:sanctum')->group(function () {
         // Orders overview for authenticated users (buyer/seller)
         Route::get('/orders', [OrderApiController::class, 'index']);
-        // Listings (write)
-        Route::post('/listings', [ListingApiController::class, 'store']);
-        Route::patch('/listings/{listing}', [ListingApiController::class, 'update']);
-        Route::delete('/listings/{listing}', [ListingApiController::class, 'destroy']);
-        // Also allow managing listings via the user nested route for convenience
-        Route::patch('/users/{user}/listings/{listing}', [ListingApiController::class, 'update']);
-        Route::delete('/users/{user}/listings/{listing}', [ListingApiController::class, 'destroy']);
+        // Listings (write) - seller only
+        Route::middleware('seller')->group(function () {
+            Route::post('/listings', [ListingApiController::class, 'store']);
+            Route::patch('/listings/{listing}', [ListingApiController::class, 'update']);
+            Route::delete('/listings/{listing}', [ListingApiController::class, 'destroy']);
+            // Also allow managing listings via the user nested route for convenience
+            Route::patch('/users/{user}/listings/{listing}', [ListingApiController::class, 'update']);
+            Route::delete('/users/{user}/listings/{listing}', [ListingApiController::class, 'destroy']);
+        });
 
         // Cart
         Route::get('/cart', [CartApiController::class, 'index']);
@@ -65,7 +67,7 @@ Route::post('/login', function (Request $request) {
         Route::delete('/my-purchases/{id}', [OrderApiController::class, 'destroy']);
 
         // Seller routes
-        Route::prefix('seller')->group(function () {
+        Route::middleware('seller')->prefix('seller')->group(function () {
             Route::get('/orders', [OrderApiController::class, 'index']);
             Route::post('/orders/{id}/status', [OrderApiController::class, 'updateStatus']);
             Route::delete('/orders/{id}', [OrderApiController::class, 'destroy']);

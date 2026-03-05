@@ -11,6 +11,7 @@ import { usePage } from '@inertiajs/vue3';
 const props = defineProps({ conversations: Array });
 
 const selectedConversation = ref(null);
+const conversationList = ref(props.conversations ?? []);
 const bottomAnchor = ref(null);
 const page = usePage();
 
@@ -26,6 +27,56 @@ const messageForm = useForm({
   content: '',
 });
 
+const upsertRealtimeMessage = async (incomingMessage) => {
+    const authUserId = page.props.auth.user.id;
+    const otherUser =
+        incomingMessage.sender_id === authUserId
+            ? incomingMessage.receiver
+            : incomingMessage.sender;
+
+    if (!otherUser) {
+        return;
+    }
+
+    const conversationIndex = conversationList.value.findIndex(
+        (chat) => chat.other_user.id === otherUser.id
+    );
+
+    if (conversationIndex === -1) {
+        conversationList.value.unshift({
+            other_user: otherUser,
+            last_message: incomingMessage,
+            messages: [incomingMessage],
+        });
+    } else {
+        const chat = conversationList.value[conversationIndex];
+
+        if (!chat.messages.some((msg) => msg.id === incomingMessage.id)) {
+            chat.messages.push(incomingMessage);
+        }
+
+        chat.last_message = incomingMessage;
+
+        if (conversationIndex > 0) {
+            conversationList.value.unshift(
+                conversationList.value.splice(conversationIndex, 1)[0]
+            );
+        }
+
+        if (selectedConversation.value?.other_user.id === otherUser.id) {
+            selectedConversation.value = chat;
+
+            if (incomingMessage.receiver_id === authUserId && !incomingMessage.is_read) {
+                incomingMessage.is_read = 1;
+                router.post(route('messages.read', otherUser.id), {}, { preserveScroll: true, preserveState: true });
+            }
+
+            await nextTick();
+            scrollToBottom(true);
+        }
+    }
+};
+
 // ---------------------------
 // Real-time Listener
 // ---------------------------
@@ -39,20 +90,15 @@ onMounted(() => {
     const userId = page.props.auth.user.id;
     
     window.Echo.private(`App.Models.User.${userId}`)
-        .listen('.MessageSent', (e) => {
-            router.reload({ 
-                only: ['conversations'],
-                onSuccess: () => {
-                    if (selectedConversation.value && e.message.sender_id === selectedConversation.value.other_user.id) {
-                         scrollToBottom(true);
-                    }
-                }
-            });
+        .listen('.MessageSent', async (e) => {
+            await upsertRealtimeMessage(e.message);
         });
 });
 
 onUnmounted(() => {
-    window.Echo.leave(`App.Models.User.${page.props.auth.user.id}`);
+    if (window.Echo) {
+        window.Echo.leave(`App.Models.User.${page.props.auth.user.id}`);
+    }
 });
 
 // ---------------------------
@@ -80,19 +126,23 @@ watch(
 watch(
   () => props.conversations,
   async (newConversations) => {
+    conversationList.value = newConversations ?? [];
+
     if (!selectedConversation.value) return;
 
-    const updated = newConversations.find(
+    const updated = conversationList.value.find(
       c => c.other_user.id === selectedConversation.value.other_user.id
     );
 
-    if (!updated) return;
+    if (!updated) {
+      selectedConversation.value = null;
+      return;
+    }
 
-    // Update messages only
-    selectedConversation.value.messages = updated.messages;
+    selectedConversation.value = updated;
 
-    await nextTick(); // wait for DOM
-    scrollToBottom(true); // smooth scroll for new messages
+    await nextTick();
+    scrollToBottom(true);
   },
   { deep: true }
 );
@@ -123,10 +173,6 @@ const sendReply = () => {
     preserveScroll: true,
     onSuccess: () => {
       messageForm.content = '';
-      router.reload({
-        only: ['conversations'],
-        onSuccess: () => scrollToBottom(true)
-      });
     }
   });
 };
@@ -172,26 +218,26 @@ const deleteConversation = () => {
 <template>
     <Head title="Messages" />
     <AuthenticatedLayout>
-        <div class=" mx-auto max-w-6xl">
-            <div class="flex h-[calc(100vh-64px)] bg-white overflow-hidden relative rounded-xl shadow-lg border border-gray-200">
+        <div class=" mx-auto max-w-6xl py-6">
+            <div class="flex h-[calc(100vh-64px)] bg-white dark:bg-gray-800 overflow-hidden relative rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
                 
-                <div class="w-1/3 border-r border-gray-200 flex flex-col">
-                    <div class="p-4 border-b border-gray-100">
-                        <h2 class="text-xl font-bold text-gray-800">Messages</h2>
-                        <input type="text" placeholder="Search messages..." class="mt-3 w-full border-gray-300 rounded-lg text-sm focus:ring-orange-500 shadow-sm" />
+                <div class="w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+                    <div class="p-4 border-b border-gray-100 dark:border-gray-700">
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Messages</h2>
+                        <input type="text" placeholder="Search messages..." class="mt-3 w-full border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:ring-orange-500 shadow-sm" />
                     </div>
                     
                     <div class="flex-1 overflow-y-auto">
-                        <div v-if="conversations.length === 0" class="p-10 text-center text-gray-400 text-sm italic">
+                        <div v-if="conversationList.length === 0" class="p-10 text-center text-gray-400 dark:text-gray-300 text-sm italic">
                             No messages yet. Contact a seller to start chatting!
                         </div>
                         <button 
-                            v-for="chat in conversations" :key="chat.other_user.id"
+                            v-for="chat in conversationList" :key="chat.other_user.id"
                             @click="selectChat(chat)"
-                            class="w-full text-left p-4 flex items-center gap-3 transition border-b border-gray-50 relative"
+                            class="w-full text-left p-4 flex items-center gap-3 transition border-b border-gray-50 dark:border-gray-700 relative"
                             :class="{
-                                'bg-orange-50 border-r-4 border-r-orange-500': selectedConversation?.other_user.id === chat.other_user.id,
-                                'bg-gray-100': selectedConversation?.other_user.id !== chat.other_user.id && chat.last_message.is_read == 0 && chat.last_message.receiver_id === $page.props.auth.user.id
+                                'bg-orange-50 dark:bg-orange-900/30 border-r-4 border-r-orange-500': selectedConversation?.other_user.id === chat.other_user.id,
+                                'bg-gray-100 dark:bg-gray-700': selectedConversation?.other_user.id !== chat.other_user.id && chat.last_message.is_read == 0 && chat.last_message.receiver_id === $page.props.auth.user.id
                             }"
                         >
                             <div 
@@ -204,20 +250,20 @@ const deleteConversation = () => {
                                 {{ chat.other_user.name.charAt(0) }}
                                 <span 
                                     v-if="chat.last_message.is_read == 0 && chat.last_message.receiver_id === $page.props.auth.user.id"
-                                    class="absolute top-0 right-0 block h-3.5 w-3.5 rounded-full bg-red-600 border-2 border-white shadow-sm"
+                                    class="absolute top-0 right-0 block h-3.5 w-3.5 rounded-full bg-red-600 border-2 border-white dark:border-gray-800 shadow-sm"
                                 ></span>
                             </div>
 
                             <div class="flex-1 truncate">
                                 <div :class="{
-                                    'font-black text-gray-900': chat.last_message.is_read == 0 && chat.last_message.receiver_id === $page.props.auth.user.id, 
-                                    'font-bold text-gray-700': chat.last_message.is_read == 1 || chat.last_message.sender_id === $page.props.auth.user.id
+                                    'font-black text-gray-900 dark:text-gray-100': chat.last_message.is_read == 0 && chat.last_message.receiver_id === $page.props.auth.user.id, 
+                                    'font-bold text-gray-700 dark:text-gray-200': chat.last_message.is_read == 1 || chat.last_message.sender_id === $page.props.auth.user.id
                                 }">
                                     {{ chat.other_user.name }}
                                 </div>
                                 <div :class="{
-                                    'font-bold text-gray-900': chat.last_message.is_read == 0 && chat.last_message.receiver_id === $page.props.auth.user.id, 
-                                    'text-gray-500 font-normal': chat.last_message.is_read == 1 || chat.last_message.sender_id === $page.props.auth.user.id
+                                    'font-bold text-gray-900 dark:text-gray-100': chat.last_message.is_read == 0 && chat.last_message.receiver_id === $page.props.auth.user.id, 
+                                    'text-gray-500 dark:text-gray-300 font-normal': chat.last_message.is_read == 1 || chat.last_message.sender_id === $page.props.auth.user.id
                                 }" class="text-xs truncate">
                                     {{ chat.last_message.content }}
                                 </div>
@@ -226,29 +272,29 @@ const deleteConversation = () => {
                     </div>
                 </div>
 
-                <div class="flex-1 flex flex-col bg-gray-50">
+                <div class="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
                     <template v-if="selectedConversation">
-                        <div class="relative p-4 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm z-50">
+                        <div class="relative p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shadow-sm z-50">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-xs font-bold text-orange-600 uppercase">
                                     {{ selectedConversation.other_user.name.charAt(0) }}
                                 </div>
-                                <div class="font-bold text-gray-800">{{ selectedConversation.other_user.name }}</div>
+                                <div class="font-bold text-gray-800 dark:text-gray-100">{{ selectedConversation.other_user.name }}</div>
                             </div>
                             <Dropdown align="right" width="48">
                                 <template #trigger>
-                                    <button type="button" class="p-2 text-gray-400 hover:text-gray-600 transition rounded-full hover:bg-gray-100 focus:outline-none">
+                                    <button type="button" class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white transition rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                         </svg>
                                     </button>
                                 </template>
                                 <template #content>
-                                    <div class="py-1 bg-white">
+                                    <div class="py-1 bg-white dark:bg-gray-800">
                                         <button 
                                             type="button"
                                             @click="confirmConversationDeletion(selectedConversation.other_user.id)" 
-                                            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
+                                            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition"
                                         >
                                             Delete Conversation
                                         </button>
@@ -260,7 +306,7 @@ const deleteConversation = () => {
                         <div
                                 :key="selectedConversation?.other_user.id"
                                 ref="messageContainer"
-                                class="flex-1 overflow-y-auto p-6 flex flex-col bg-gray-50"
+                                class="flex-1 overflow-y-auto p-6 flex flex-col bg-gray-50 dark:bg-gray-900"
                             >
 
                             <template v-if="selectedConversation.messages && selectedConversation.messages.length > 0">
@@ -275,11 +321,11 @@ const deleteConversation = () => {
                                             class="p-3 rounded-2xl text-sm"
                                             :class="msg.sender_id === $page.props.auth.user.id 
                                                 ? 'bg-orange-600 text-white rounded-tr-none shadow-md' 
-                                                : 'bg-white text-gray-800 border border-gray-200 rounded-tl-none shadow-sm'"
+                                                : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-tl-none shadow-sm'"
                                         >
                                             {{ msg.content }}
                                         </div>
-                                        <span class="text-[10px] text-gray-400 mt-1 uppercase">
+                                        <span class="text-[10px] text-gray-400 dark:text-gray-300 mt-1 uppercase">
                                             {{ new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
                                         </span>
                                     </div>
@@ -288,13 +334,13 @@ const deleteConversation = () => {
                              <div ref="bottomAnchor"></div>
                         </div>
 
-                        <div class="p-4 bg-white border-t border-gray-200">
+                        <div class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
                             <form @submit.prevent="sendReply" class="flex gap-2">
                                 <input 
                                     v-model="messageForm.content"
                                     type="text" 
                                     placeholder="Type a message..." 
-                                    class="flex-1 border-gray-300 rounded-full px-4 focus:ring-orange-500 focus:border-orange-500"
+                                    class="flex-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-full px-4 focus:ring-orange-500 focus:border-orange-500"
                                     :disabled="messageForm.processing"
                                 />
                                 <button 
@@ -310,9 +356,9 @@ const deleteConversation = () => {
                         </div>
                     </template>
 
-                    <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
+                    <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-gray-300">
                         <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-4xl shadow-sm">📨</div>
-                        <p class="font-medium text-gray-500 italic">Select a conversation to start chatting</p>
+                        <p class="font-medium text-gray-500 dark:text-gray-300 italic">Select a conversation to start chatting</p>
                     </div>
                 </div>
             </div>
@@ -320,8 +366,8 @@ const deleteConversation = () => {
 
         <Modal :show="confirmingMessageDeletion" @close="confirmingMessageDeletion = false" maxWidth="sm">
             <div class="p-6">
-                <h2 class="text-lg font-bold text-gray-900">Delete Message?</h2>
-                <p class="mt-2 text-sm text-gray-600">Are you sure? This action is permanent.</p>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Delete Message?</h2>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Are you sure? This action is permanent.</p>
                 <div class="mt-6 flex justify-end gap-3">
                     <SecondaryButton @click="confirmingMessageDeletion = false">Cancel</SecondaryButton>
                     <DangerButton @click="deleteMessage">Delete</DangerButton>
@@ -331,8 +377,8 @@ const deleteConversation = () => {
 
         <Modal :show="confirmingConversationDeletion" @close="confirmingConversationDeletion = false" maxWidth="md">
             <div class="p-6">
-                <h2 class="text-lg font-bold text-gray-900 text-center">Delete Conversation?</h2>
-                <p class="mt-4 text-sm text-gray-600 text-center">This will permanently remove all messages. You cannot undo this.</p>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 text-center">Delete Conversation?</h2>
+                <p class="mt-4 text-sm text-gray-600 dark:text-gray-300 text-center">This will permanently remove all messages. You cannot undo this.</p>
                 <div class="mt-8 flex justify-center gap-4">
                     <SecondaryButton class="w-full justify-center" @click="confirmingConversationDeletion = false">Cancel</SecondaryButton>
                     <DangerButton class="w-full justify-center" @click="deleteConversation">Yes, Delete All</DangerButton>

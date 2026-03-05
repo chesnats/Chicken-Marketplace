@@ -27,6 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 'OldClass' => 'NewClass',
             ]);
 
+            $middleware->alias([
+                'seller' => \App\Http\Middleware\EnsureSeller::class,
+            ]);
+
         })
 
     ->withExceptions(function (Exceptions $exceptions): void {

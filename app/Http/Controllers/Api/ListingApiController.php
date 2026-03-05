@@ -26,6 +26,10 @@ class ListingApiController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if (!$request->user() || $request->user()->role !== 'seller') {
+            return response()->json(['message' => 'Only sellers can create listings'], 403);
+        }
+
         $validated = $request->validate([
             'breed' => 'required|string|max:50',
             'price' => 'required|numeric|min:1',
@@ -41,6 +45,10 @@ class ListingApiController extends Controller
 
     public function update(Request $request, Listing $listing): JsonResponse
     {
+        if (!$request->user() || $request->user()->role !== 'seller') {
+            return response()->json(['message' => 'Only sellers can update listings'], 403);
+        }
+
         if ($request->user()->id !== $listing->user_id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
@@ -52,8 +60,8 @@ class ListingApiController extends Controller
 
     public function destroy(Request $request, Listing $listing): JsonResponse
     {
-        if (!$request->user()) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
+        if (!$request->user() || $request->user()->role !== 'seller') {
+            return response()->json(['message' => 'Only sellers can delete listings'], 403);
         }
 
         if ($request->user()->id !== $listing->user_id) {

@@ -56,42 +56,42 @@ const proceedWithDelete = () => {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">📦 My Purchases</h2>
-                <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs font-bold uppercase">
+                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">📦 My Purchases</h2>
+                <span class="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md text-xs font-bold uppercase">
                     {{ myOrders.length }} Total
                 </span>
             </div>
         </template>
 
-        <div class="py-12 bg-gray-50 min-h-screen">
+        <div class="py-12 bg-gray-50 min-h-screen dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border border-gray-200 dark:border-gray-700">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-xl border">
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border border-gray-200 dark:border-gray-700">
                     <!-- Desktop table (visible on sm and up) -->
                     <div class="hidden sm:block p-6 overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="border-b bg-gray-50">
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500">Chicken</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500">Seller</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500">Price</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500">Status</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500">Action</th>
-                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 text-center">Remove</th>
+                                <tr class="border-b bg-gray-50 dark:bg-gray-600 dark:border-gray-500">
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white">Chicken</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white">Seller</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white">Price</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white">Status</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 dark:text-white">Action</th>
+                                    <th class="p-4 text-xs font-bold uppercase text-gray-500 text-center dark:text-white">Remove</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <tr v-for="item in myOrders" :key="item.id" class="hover:bg-gray-50 transition">
+                                <tr v-for="item in myOrders" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                     <td class="p-4">
                                         <div class="flex items-center gap-3">
                                             <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-xl">🐔</div>
                                             <div>
-                                                <p class="font-medium text-gray-900">{{ item.listing?.breed }}</p>
-                                                <p class="text-xs text-gray-500">Order #{{ item.id }}</p>
+                                                <p class="font-medium text-gray-900 dark:text-gray-100">{{ item.listing?.breed }}</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-300">Order #{{ item.id }}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="p-4">
-                                        <p class="text-sm font-bold">{{ item.listing?.user?.name }}</p>
+                                        <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ item.listing?.user?.name }}</p>
                                     </td>
                                     <td class="p-4 font-bold text-green-600">₱{{ item.price }}</td>
                                     <td class="p-4">
@@ -146,17 +146,17 @@ const proceedWithDelete = () => {
 
                     <!-- Mobile cards (visible under sm) -->
                     <div class="sm:hidden p-4 space-y-4">
-                        <div v-for="item in myOrders" :key="`mobile-${item.id}`" class="bg-white border rounded-lg p-4 shadow-sm">
+                        <div v-for="item in myOrders" :key="`mobile-${item.id}`" class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow-sm">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-xl">🐔</div>
                                     <div>
-                                        <p class="font-medium text-gray-900">{{ item.listing?.breed }}</p>
-                                        <p class="text-xs text-gray-500">Order #{{ item.id }}</p>
+                                        <p class="font-medium text-gray-900 dark:text-gray-100">{{ item.listing?.breed }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-300">Order #{{ item.id }}</p>
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-sm font-bold">{{ item.listing?.user?.name }}</p>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ item.listing?.user?.name }}</p>
                                     <p class="font-bold text-green-600">₱{{ item.price }}</p>
                                 </div>
                             </div>
@@ -212,10 +212,10 @@ const proceedWithDelete = () => {
 
         <Modal :show="showingDeleteModal" @close="closeModals">
             <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900">
+                <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                     {{ !selectedOrder?.listing ? 'Remove Unavailable Record?' : (selectedOrder?.status === 'pending' ? 'Cancel Purchase?' : 'Remove from history?') }}
                 </h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
                     <span v-if="!selectedOrder?.listing">
                         This listing is no longer available in the marketplace. You can remove this record from your purchase history.
                     </span>
@@ -239,9 +239,9 @@ const proceedWithDelete = () => {
             <div class="p-6">
                 <div class="flex items-center gap-3 mb-4">
                     <span class="text-2xl">✅</span>
-                    <h2 class="text-lg font-medium text-gray-900">Confirm Receipt</h2>
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Confirm Receipt</h2>
                 </div>
-                <p class="mt-1 text-sm text-gray-600">
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
                     Have you successfully received your <strong>{{ selectedOrder?.listing?.breed }}</strong> from the seller? 
                     This will mark the order as finished.
                 </p>

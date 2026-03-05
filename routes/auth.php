@@ -12,21 +12,25 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    /** * We no longer use RegisteredUserController::class, 'create' 
-     * because the registration form is now part of Welcome.vue.
-     * We redirect back to the home page if someone types /register.
+    /**
+     * Registration UI is unified in Welcome.vue, so GET /register points to
+     * the same auth page and defaults to the login view.
      */
     Route::get('register', function () {
-        return redirect('/'); 
+        return redirect()->route('login', ['mode' => 'register']);
     })->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
-    /** * Same for login. If someone navigates to /login, 
-     * they are sent to the home page where the unified form is.
+    /**
+     * Dedicated login page (unified login/register UI).
      */
     Route::get('login', function () {
-        return redirect('/');
+        return inertia('Welcome', [
+            'canResetPassword' => Route::has('password.request'),
+            'status' => session('status'),
+            'authMode' => request('mode', 'login'),
+        ]);
     })->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);

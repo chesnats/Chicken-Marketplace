@@ -6,14 +6,17 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import useDarkMode from '@/Composables/useDarkMode';
 
 const props = defineProps({
     canResetPassword: { type: Boolean },
     status: { type: String },
+    authMode: { type: String, default: 'login' },
 });
+const { isDark, toggleTheme } = useDarkMode();
 
 // Toggle state
-const isLogin = ref(true);
+const isLogin = ref(props.authMode !== 'register');
 
 // Forms
 const loginForm = useForm({
@@ -27,7 +30,6 @@ const registerForm = useForm({
     email: '',
     password: '',
     password_confirmation: '',
-    role: 'buyer',
 });
 
 const submitLogin = () => {
@@ -46,9 +48,43 @@ const submitRegister = () => {
 <template>
     <Head :title="isLogin ? 'Log in' : 'Register'" />
 
-    <div class="flex min-h-screen overflow-hidden">
+    <div class="relative flex min-h-screen overflow-hidden">
+        <button
+            type="button"
+            @click="toggleTheme"
+            class="absolute right-4 top-4 z-20 rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700 transition"
+            :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+        >
+            <svg
+                v-if="isDark"
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" />
+            </svg>
+            <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <path d="M12 3a7 7 0 1 0 9 9 9 9 0 1 1-9-9z" />
+            </svg>
+        </button>
         
-        <div class="hidden lg:flex lg:w-2/3 bg-orange-600 items-center justify-center p-16 text-white">
+        <div class="hidden lg:flex lg:w-2/3 bg-orange-600 dark:bg-orange-700 items-center justify-center p-16 text-white">
             <div class="max-w-2xl text-center">
                 <div class="flex justify-center mb-8">
                     <img src="chickenlogo.png" alt="Chicken Marketplace Logo" class="w-36 h-36" />
@@ -66,8 +102,8 @@ const submitRegister = () => {
             </div>
         </div>
 
-        <div class="w-full lg:w-1/3 flex items-center justify-center bg-orange-50 p-6 md:p-12">
-            <div class="w-full max-w-md bg-white p-8 md:p-10 rounded-2xl shadow-2xl border border-gray-100">
+        <div class="w-full lg:w-1/3 flex items-center justify-center bg-orange-50 dark:bg-gray-900 p-6 md:p-12">
+            <div class="w-full max-w-md bg-white dark:bg-gray-800 p-8 md:p-10 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700">
                 
                 <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
                     {{ status }}
@@ -76,8 +112,8 @@ const submitRegister = () => {
                 <Transition name="fade" mode="out-in">
                     <div v-if="isLogin" key="login">
                         <div class="mb-8">
-                            <h2 class="text-3xl font-bold text-gray-900">Welcome Back</h2>
-                            <p class="text-gray-500 text-sm mt-2">Log in to browse the marketplace.</p>
+                            <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Welcome Back</h2>
+                            <p class="text-gray-500 dark:text-gray-300 text-sm mt-2">Log in to browse the marketplace.</p>
                         </div>
 
                         <form @submit.prevent="submitLogin" class="space-y-4">
@@ -96,7 +132,7 @@ const submitRegister = () => {
                             <div class="mt-4 flex items-center justify-between">
                                 <label class="flex items-center cursor-pointer">
                                     <Checkbox name="remember" v-model:checked="loginForm.remember" class="text-orange-600" />
-                                    <span class="ms-2 text-sm text-gray-600">Remember me</span>
+                                    <span class="ms-2 text-sm text-gray-600 dark:text-gray-300">Remember me</span>
                                 </label>
                                 <Link v-if="canResetPassword" :href="route('password.request')" class="text-sm text-orange-600 font-bold underline hover:text-orange-700">Forgot password?</Link>
                             </div>
@@ -105,7 +141,7 @@ const submitRegister = () => {
                                 <PrimaryButton class="w-full justify-center bg-orange-600 hover:bg-orange-700 py-4 text-lg rounded-xl" :disabled="loginForm.processing">
                                     Log in
                                 </PrimaryButton>
-                                <p class="text-center text-sm text-gray-600">
+                                <p class="text-center text-sm text-gray-600 dark:text-gray-300">
                                     Don't have an account? 
                                     <button type="button" @click="isLogin = false" class="text-orange-600 font-black underline ml-1">Register Here</button>
                                 </p>
@@ -115,8 +151,8 @@ const submitRegister = () => {
 
                     <div v-else key="register">
                         <div class="mb-8">
-                            <h2 class="text-3xl font-bold text-gray-900">Create Account</h2>
-                            <p class="text-gray-500 text-sm mt-2">Join our community of chicken enthusiasts.</p>
+                            <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Create Account</h2>
+                            <p class="text-gray-500 dark:text-gray-300 text-sm mt-2">Join our community of chicken enthusiasts.</p>
                         </div>
 
                         <form @submit.prevent="submitRegister" class="space-y-4">
@@ -144,19 +180,11 @@ const submitRegister = () => {
                             </div>
                             <InputError class="mt-2" :message="registerForm.errors.password" />
 
-                            <div class="mt-4">
-                                <InputLabel for="reg_role" value="Register as" />
-                                <select id="reg_role" v-model="registerForm.role" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm bg-gray-50">
-                                    <option value="buyer">Buyer (I want to buy)</option>
-                                    <option value="seller">Seller (I want to sell)</option>
-                                </select>
-                            </div>
-
                             <div class="mt-8 flex flex-col gap-4">
                                 <PrimaryButton class="w-full justify-center bg-orange-600 hover:bg-orange-700 py-4 text-lg rounded-xl" :disabled="registerForm.processing">
                                     Register Now
                                 </PrimaryButton>
-                                <p class="text-center text-sm text-gray-600">
+                                <p class="text-center text-sm text-gray-600 dark:text-gray-300">
                                     Already have an account? 
                                     <button type="button" @click="isLogin = true" class="text-orange-600 font-black underline ml-1">Login Here</button>
                                 </p>

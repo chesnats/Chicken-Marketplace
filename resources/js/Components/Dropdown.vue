@@ -12,7 +12,7 @@ const props = defineProps({
     },
     contentClasses: {
         type: String,
-        default: 'py-1 bg-white',
+        default: 'py-1 bg-white dark:bg-gray-800',
     },
 });
 
@@ -42,14 +42,11 @@ const alignmentClasses = computed(() => {
 });
 
 const open = ref(false);
-const toggle = (e) => {
-    open.value = !open.value;
-};
 </script>
 
 <template>
     <div class="relative">
-        <div @pointerdown.capture.prevent="toggle">
+        <div @click.stop="open = !open">
             <slot name="trigger" />
         </div>
 
@@ -68,17 +65,17 @@ const toggle = (e) => {
             leave-from-class="opacity-100 scale-100"
             leave-to-class="opacity-0 scale-95"
         >
-            <div v-show="open" class="z-50">
+            <div v-show="open">
                 <!-- Mobile: bottom sheet full-width -->
-                <div class="fixed inset-x-0 bottom-0 rounded-t-lg bg-white shadow-lg sm:hidden">
+                <div class="fixed inset-x-0 bottom-0 z-50 rounded-t-lg bg-white dark:bg-gray-800 shadow-lg sm:hidden">
                     <div class="px-4 py-3 max-h-[60vh] overflow-y-auto" :class="contentClasses">
                         <slot name="content" />
                     </div>
                 </div>
 
                 <!-- Desktop: regular dropdown -->
-                <div class="hidden sm:block absolute mt-2 rounded-md shadow-lg" :class="[widthClass, alignmentClasses]">
-                    <div class="rounded-md ring-1 ring-black ring-opacity-5" :class="contentClasses">
+                <div class="hidden sm:block absolute z-50 mt-2 rounded-md shadow-lg" :class="[widthClass, alignmentClasses]">
+                    <div class="rounded-md ring-1 ring-black/5 dark:ring-white/10" :class="contentClasses">
                         <slot name="content" />
                     </div>
                 </div>

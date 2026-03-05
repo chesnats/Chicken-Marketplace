@@ -12,12 +12,19 @@ class CartApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+        if (!$user || $user->role !== 'buyer') {
+            return response()->json(['message' => 'Buyer access only'], 403);
+        }
         $items = Cart::with('listing')->where('user_id', $user->id)->get();
         return response()->json($items);
     }
 
     public function store(Request $request): JsonResponse
     {
+        if (!$request->user() || $request->user()->role !== 'buyer') {
+            return response()->json(['message' => 'Buyer access only'], 403);
+        }
+
         $validated = $request->validate([
             'listing_id' => 'required|integer|exists:listings,id',
             'quantity' => 'nullable|integer|min:1'
@@ -34,6 +41,10 @@ class CartApiController extends Controller
 
     public function destroy(Request $request, Cart $cart): JsonResponse
     {
+        if (!$request->user() || $request->user()->role !== 'buyer') {
+            return response()->json(['message' => 'Buyer access only'], 403);
+        }
+
         if ($request->user()->id !== $cart->user_id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }

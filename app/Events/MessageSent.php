@@ -29,9 +29,33 @@ class MessageSent implements ShouldBroadcastNow
      */
     public function broadcastOn(): array
     {
-        // This targets the receiver's private channel
+        // Broadcast to both users so all open chat tabs update immediately.
         return [
+            new PrivateChannel('App.Models.User.' . $this->message->sender_id),
             new PrivateChannel('App.Models.User.' . $this->message->receiver_id),
+        ];
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'message' => [
+                'id' => $this->message->id,
+                'sender_id' => $this->message->sender_id,
+                'receiver_id' => $this->message->receiver_id,
+                'listing_id' => $this->message->listing_id,
+                'content' => $this->message->content,
+                'is_read' => $this->message->is_read,
+                'created_at' => $this->message->created_at,
+                'sender' => $this->message->sender ? [
+                    'id' => $this->message->sender->id,
+                    'name' => $this->message->sender->name,
+                ] : null,
+                'receiver' => $this->message->receiver ? [
+                    'id' => $this->message->receiver->id,
+                    'name' => $this->message->receiver->name,
+                ] : null,
+            ],
         ];
     }
 

@@ -71,7 +71,9 @@ class MessageController extends Controller
             'is_read'     => false,
         ]);
 
-        broadcast(new MessageSent($message))->toOthers();
+        $message->load(['sender:id,name', 'receiver:id,name']);
+        broadcast(new MessageSent($message));
+
         return redirect()->back();
     }
 

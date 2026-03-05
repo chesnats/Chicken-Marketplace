@@ -1,45 +1,25 @@
 <?php
 
-namespace App\Notifications;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
-
-class OrderStatusNotification extends Notification
+return new class extends Migration
 {
-    use Queueable;
-
-    protected $item;
-    protected $status;
-
-    public function __construct($item, $status)
+    public function up(): void
     {
-        $this->item = $item;
-        $this->status = $status;
+        Schema::create('notifications', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('type');
+            $table->morphs('notifiable');
+            $table->text('data');
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
+        });
     }
 
-    public function via($notifiable)
+    public function down(): void
     {
-        return ['database']; // Store in database
+        Schema::dropIfExists('notifications');
     }
-
-    public function toArray($notifiable)
-    {
-        return [
-            'item_id' => $this->item->id,
-            'listing_breed' => $this->item->listing->breed,
-            'status' => $this->status,
-            'message' => $this->getMessage(),
-        ];
-    }
-
-    protected function getMessage()
-    {
-        return match($this->status) {
-            'accepted' => "Your order for {$this->item->listing->breed} has been accepted!",
-            'on_delivery' => "Your chicken is now on the way!",
-            'delivered' => "Order #{$this->item->id} has been successfully delivered.",
-            default => "Update on your order.",
-        };
-    }
-}
+};
