@@ -45,6 +45,10 @@ class MessageSent implements ShouldBroadcastNow
                 'receiver_id' => $this->message->receiver_id,
                 'listing_id' => $this->message->listing_id,
                 'content' => $this->message->content,
+                'media_path' => $this->message->media_path,
+                'media_type' => $this->message->media_type,
+                'media_original_name' => $this->message->media_original_name,
+                'media_url' => $this->message->media_url,
                 'is_read' => $this->message->is_read,
                 'created_at' => $this->message->created_at,
                 'sender' => $this->message->sender ? [

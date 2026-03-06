@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Message extends Model
 {
@@ -12,6 +13,9 @@ class Message extends Model
         'receiver_id',
         'listing_id',
         'content',
+        'media_path',
+        'media_type',
+        'media_original_name',
         'is_read'
     ];
 
@@ -20,6 +24,10 @@ class Message extends Model
      */
     protected $casts = [
         'is_read' => 'boolean',
+    ];
+
+    protected $appends = [
+        'media_url',
     ];
 
     public function sender(): BelongsTo
@@ -35,5 +43,14 @@ class Message extends Model
     public function listing(): BelongsTo
     {
         return $this->belongsTo(Listing::class);
+    }
+
+    public function getMediaUrlAttribute(): ?string
+    {
+        if (! $this->media_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->media_path);
     }
 }

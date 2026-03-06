@@ -6,11 +6,13 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\Buyer\OrderController as BuyerOrderController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 Route::get('/', function () {
 	return redirect()->route('listings.index');
@@ -22,6 +24,9 @@ Route::get('/dashboard', DashboardController::class)
 
 // Public listing browse page (guests, buyers, sellers)
 Route::get('/listings', [ListingController::class, 'index'])->name('listings.index');
+Route::post('/payments/paymongo/webhook', [PaymentWebhookController::class, 'payMongo'])
+	->withoutMiddleware(VerifyCsrfToken::class)
+	->name('payments.paymongo.webhook');
 
 Route::middleware('auth')->group(function () {
 	// Profile Routes
@@ -74,6 +79,7 @@ Route::middleware(['auth', 'seller'])->prefix('seller')->name('seller.')->group(
 	Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
 	Route::post('/orders/{id}/status', [SellerOrderController::class, 'updateStatus'])->name('orders.updateStatus');
 	Route::delete('/orders/{id}', [SellerOrderController::class, 'destroy'])->name('orders.destroy');
+	Route::get('/orders/{id}/message-buyer', [MessageController::class, 'startBuyerConversation'])->name('orders.messageBuyer');
 });
 
 require __DIR__.'/auth.php';

@@ -128,11 +128,19 @@ class DashboardController extends Controller
                 ->get()
                 ->map(fn (OrderItem $item) => $this->formatRecentOrder($item, true));
 
+            $recentBuyerActivityList = (clone $sellerOrders)
+                ->with(['order.user:id,name', 'listing:id,breed'])
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(fn (OrderItem $item) => $this->formatRecentActivity($item, true));
+
             return [
                 'recent_buyer_activity' => [
                     'orders_last_7_days' => $ordersLast7Days,
                     'unique_buyers_last_7_days' => $uniqueBuyersLast7Days,
                 ],
+                'recent_buyer_activity_list' => $recentBuyerActivityList,
                 'recent_orders' => $recentOrders,
             ];
         }
@@ -147,11 +155,19 @@ class DashboardController extends Controller
             ->get()
             ->map(fn (OrderItem $item) => $this->formatRecentOrder($item, false));
 
+        $recentBuyerActivityList = (clone $buyerOrders)
+            ->with(['listing:id,breed'])
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn (OrderItem $item) => $this->formatRecentActivity($item, false));
+
         return [
             'recent_buyer_activity' => [
                 'orders_last_7_days' => $ordersLast7Days,
                 'unique_buyers_last_7_days' => 0,
             ],
+            'recent_buyer_activity_list' => $recentBuyerActivityList,
             'recent_orders' => $recentOrders,
         ];
     }
@@ -164,6 +180,17 @@ class DashboardController extends Controller
             'buyer_name' => $isSeller ? ($item->order?->user?->name ?? 'Unknown buyer') : 'You',
             'status' => ucfirst(str_replace('_', ' ', $item->status ?? 'pending')),
             'price' => $item->price,
+            'created_at' => $item->created_at?->toDateTimeString(),
+        ];
+    }
+
+    private function formatRecentActivity(OrderItem $item, bool $isSeller): array
+    {
+        return [
+            'id' => $item->id,
+            'buyer_name' => $isSeller ? ($item->order?->user?->name ?? 'Unknown buyer') : 'You',
+            'breed' => $item->listing?->breed ?? 'Listing removed',
+            'status' => ucfirst(str_replace('_', ' ', $item->status ?? 'pending')),
             'created_at' => $item->created_at?->toDateTimeString(),
         ];
     }

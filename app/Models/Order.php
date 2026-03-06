@@ -19,6 +19,9 @@ class Order extends Model
         'total_amount',
         'status',
         'payment_method',
+        'payment_status',
+        'paymongo_checkout_session_id',
+        'paymongo_payment_reference',
         'address',
         'phone',
     ];

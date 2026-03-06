@@ -19,6 +19,8 @@ const user = usePage().props.auth.user;
 const form = useForm({
     name: user.name,
     email: user.email,
+    seller_default_location: user.seller_default_location ?? 'Bulacao Sta. Filomena Alegria, Cebu',
+    seller_contact_number: user.seller_contact_number ?? '09491735243',
 });
 </script>
 
@@ -69,6 +71,34 @@ const form = useForm({
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
+            <div v-if="user.role === 'seller'">
+                <InputLabel for="seller_default_location" value="Default Seller Location" />
+
+                <TextInput
+                    id="seller_default_location"
+                    type="text"
+                    class="mt-1 block w-full"
+                    v-model="form.seller_default_location"
+                    required
+                    autocomplete="off"
+                />
+
+                <InputError class="mt-2" :message="form.errors.seller_default_location" />
+            </div>
+
+            <div>
+                <InputLabel for="seller_contact_number" value="Default Contact Number" />
+                <TextInput
+                    id="seller_contact_number"
+                    type="text"
+                    class="mt-1 block w-full"
+                    v-model="form.seller_contact_number"
+                    required
+                    autocomplete="off"
+                />
+                <InputError class="mt-2" :message="form.errors.seller_contact_number" />
+            </div>
+
             <div v-if="mustVerifyEmail && user.email_verified_at === null">
                 <p class="mt-2 text-sm text-gray-800 dark:text-gray-200">
                     Your email address is unverified.
@@ -110,4 +140,5 @@ const form = useForm({
         </form>
     </section>
 </template>
+
 

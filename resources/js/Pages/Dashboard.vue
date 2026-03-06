@@ -37,7 +37,9 @@ const statusSegments = computed(() =>
 );
 
 const recentBuyerActivity = computed(() => props.insights?.recent_buyer_activity ?? {});
+const recentBuyerActivityList = computed(() => (props.insights?.recent_buyer_activity_list ?? []).slice(0, 5));
 const recentOrders = computed(() => props.insights?.recent_orders ?? []);
+const recentOrdersLimited = computed(() => recentOrders.value.slice(0, 5));
 const totalIncomeDisplay = computed(() =>
     Number(props.stats?.total_income ?? 0).toLocaleString(undefined, {
         minimumFractionDigits: 2,
@@ -50,14 +52,8 @@ const totalIncomeDisplay = computed(() =>
     <Head title="Dashboard" />
 
     <AuthenticatedLayout>
-        <template #header>
-            <h2 class="text-xl font-bold leading-tight text-gray-800 dark:text-gray-100">
-                Welcome back, {{ $page.props.auth.user.name }}!
-            </h2>
-        </template>
-
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+            <div class="w-full space-y-6 sm:px-6 lg:px-8">
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <div class="rounded-xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                         <p class="text-sm font-medium uppercase text-gray-500 dark:text-gray-400">Account Type</p>
@@ -195,12 +191,25 @@ const totalIncomeDisplay = computed(() =>
                                 Keep checking status updates from sellers in your purchases page.
                             </p>
                         </div>
+                        <div v-if="recentBuyerActivityList.length > 0" class="mt-3 max-h-64 space-y-2 overflow-y-auto pe-1 scrollbar-hidden">
+                            <div
+                                v-for="activity in recentBuyerActivityList"
+                                :key="`activity-${activity.id}`"
+                                class="rounded-md bg-white/70 px-3 py-2 text-sm text-orange-900 dark:bg-orange-900/30 dark:text-orange-100"
+                            >
+                                <p class="font-semibold">{{ activity.breed }}</p>
+                                <p class="text-xs opacity-90">
+                                    {{ userRole === 'seller' ? `Buyer: ${activity.buyer_name}` : 'Activity by you' }}
+                                    | {{ activity.status }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                     <div class="rounded-xl border border-blue-100 bg-blue-50 p-6 dark:border-blue-900/60 dark:bg-blue-950/30">
                         <h4 class="mb-2 font-bold text-blue-800 dark:text-blue-300">Recent Orders</h4>
-                        <div v-if="recentOrders.length > 0" class="space-y-2">
+                        <div v-if="recentOrdersLimited.length > 0" class="max-h-64 space-y-2 overflow-y-auto pe-1 scrollbar-hidden">
                             <div
-                                v-for="order in recentOrders"
+                                v-for="order in recentOrdersLimited"
                                 :key="order.id"
                                 class="rounded-md bg-white/70 px-3 py-2 text-sm text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
                             >

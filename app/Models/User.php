@@ -25,6 +25,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'seller_default_location',
+        'seller_contact_number',
     ];
 
     /**
@@ -76,3 +78,6 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'receiver_id');
     }
 }
+
+
+

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Buyer;
 
+use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
+use App\Models\Message;
 use App\Models\OrderItem;
 use App\Notifications\OrderStatusNotification;
 use Illuminate\Http\Request;
@@ -65,6 +67,20 @@ class OrderController extends Controller
         // ✅ Null-safe check before notifying
         if ($item->listing && $item->listing->user) {
             $item->listing->user->notify(new OrderStatusNotification($item, 'delivered'));
+
+            $buyer = Auth::user();
+            if ($buyer) {
+                $autoMessage = Message::create([
+                    'sender_id' => $buyer->id,
+                    'receiver_id' => $item->listing->user->id,
+                    'listing_id' => $item->listing_id,
+                    'content' => 'Thank you. I already received the order.',
+                    'is_read' => false,
+                ]);
+
+                $autoMessage->load(['sender:id,name', 'receiver:id,name']);
+                broadcast(new MessageSent($autoMessage));
+            }
         }
 
         return redirect()->back()->with('success', 'Order marked as received!');

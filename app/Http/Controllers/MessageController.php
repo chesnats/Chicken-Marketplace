@@ -3,16 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Message;
+use App\Models\Listing;
+use App\Models\OrderItem;
 use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
 
 class MessageController extends Controller
 {
     public function index()
     {
         $userId = Auth::id();
+        $composeReceiverId = request()->integer('compose_user');
+        $composeListingId = request()->integer('compose_listing');
             
             // 💡 ADD THIS: Mark everything as read when the inbox is opened
             $allMessages = Message::where('sender_id', $userId)
@@ -37,8 +42,25 @@ class MessageController extends Controller
                     ->where('is_read', false)
                     ->update(['is_read' => true]);
 
+            $composeConversation = null;
+            if ($composeReceiverId && $composeListingId) {
+                $eligibleOrder = OrderItem::where('listing_id', $composeListingId)
+                    ->whereHas('listing', fn ($query) => $query->where('user_id', $userId))
+                    ->whereHas('order', fn ($query) => $query->where('user_id', $composeReceiverId))
+                    ->with('order.user')
+                    ->first();
+
+                if ($eligibleOrder?->order?->user) {
+                    $composeConversation = [
+                        'other_user' => $eligibleOrder->order->user,
+                        'listing_id' => $composeListingId,
+                    ];
+                }
+            }
+
             return Inertia::render('Messages/Index', [
-                'conversations' => $conversations
+                'conversations' => $conversations,
+                'composeConversation' => $composeConversation,
             ]);
         }
 
@@ -57,17 +79,68 @@ class MessageController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'receiver_id' => 'required',
-            'listing_id'  => 'required',
-            'content'     => 'required|string',
+        $validated = $request->validate([
+            'receiver_id' => 'required|integer|exists:users,id',
+            'listing_id'  => 'required|integer|exists:listings,id',
+            'content'     => 'nullable|string|required_without:media',
+            'media'       => [
+                'nullable',
+                'file',
+                'required_without:content',
+                'max:102400',
+                'mimes:jpg,jpeg,png,webp,gif,heic,heif,mp4,mov,webm',
+            ],
         ]);
 
+        $senderId = Auth::id();
+        $receiverId = (int) $validated['receiver_id'];
+        $listingId = (int) $validated['listing_id'];
+
+        if ($receiverId === $senderId) {
+            abort(422, 'Invalid receiver.');
+        }
+
+        $sellerOwnsListing = OrderItem::where('listing_id', $listingId)
+            ->whereHas('listing', fn ($query) => $query->where('user_id', $senderId))
+            ->exists();
+
+        if ($sellerOwnsListing) {
+            $isBuyerOfListing = OrderItem::where('listing_id', $listingId)
+                ->whereHas('order', fn ($query) => $query->where('user_id', $receiverId))
+                ->exists();
+
+            if (! $isBuyerOfListing) {
+                abort(403, 'You can only message buyers who purchased this listing.');
+            }
+        } else {
+            $isReceiverListingOwner = Listing::whereKey($listingId)
+                ->where('user_id', $receiverId)
+                ->exists();
+
+            if (! $isReceiverListingOwner) {
+                abort(403, 'Invalid conversation target for this listing.');
+            }
+        }
+
+        $mediaPath = null;
+        $mediaType = null;
+        $mediaOriginalName = null;
+
+        if ($request->hasFile('media')) {
+            $file = $request->file('media');
+            $mediaPath = $file->store('messages', 'public');
+            $mediaOriginalName = $file->getClientOriginalName();
+            $mediaType = str_starts_with((string) $file->getMimeType(), 'image/') ? 'image' : 'video';
+        }
+
         $message = Message::create([
-            'sender_id'   => Auth::id(),
-            'receiver_id' => $request->input('receiver_id'),
-            'listing_id'  => $request->input('listing_id'),
-            'content'     => $request->input('content'),
+            'sender_id'   => $senderId,
+            'receiver_id' => $receiverId,
+            'listing_id'  => $listingId,
+            'content'     => trim((string) ($validated['content'] ?? '')) ?: '[Attachment]',
+            'media_path' => $mediaPath,
+            'media_type' => $mediaType,
+            'media_original_name' => $mediaOriginalName,
             'is_read'     => false,
         ]);
 
@@ -98,5 +171,24 @@ class MessageController extends Controller
         })->delete();
 
         return redirect()->route('messages.index');
+    }
+
+    public function startBuyerConversation(int $orderItemId): RedirectResponse
+    {
+        $sellerId = Auth::id();
+
+        $orderItem = OrderItem::with(['order.user', 'listing'])
+            ->whereHas('listing', fn ($query) => $query->where('user_id', $sellerId))
+            ->findOrFail($orderItemId);
+
+        $buyerId = $orderItem->order?->user_id;
+        if (! $buyerId) {
+            abort(404, 'Buyer not found.');
+        }
+
+        return redirect()->route('messages.index', [
+            'compose_user' => $buyerId,
+            'compose_listing' => $orderItem->listing_id,
+        ]);
     }
 }

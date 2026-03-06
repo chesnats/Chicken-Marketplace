@@ -25,10 +25,7 @@ const checkoutForm = useForm({
 
 const paymentOptions = [
     { value: 'cod', label: 'Cash on Delivery', icon: 'truck' },
-    { value: 'gcash', label: 'GCash', icon: 'wallet' },
-    { value: 'paymaya', label: 'PayMaya', icon: 'card' },
-    { value: 'bank_transfer', label: 'Bank Transfer', icon: 'bank' },
-    { value: 'otc', label: 'Over the Counter', icon: 'store' },
+    { value: 'gcash', label: 'GCash (PayMongo)', icon: 'wallet' },
 ];
 
 // --- Functions ---
@@ -78,12 +75,8 @@ const processCheckout = () => {
     checkoutForm.post(route('checkout.store'), {
         preserveScroll: true,
         onSuccess: () => {
-            // 1. Reset state
             confirmingOrderFinal.value = false;
             checkoutForm.reset();
-            
-            // 2. Immediate automatic redirect
-            router.visit(route('buyer.orders.index'));
         },
         onError: () => {
             confirmingOrderFinal.value = false;
@@ -101,10 +94,10 @@ const processCheckout = () => {
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">🛒 My Shopping Cart</h2>
         </template>
 
-        <div class="py-12 bg-gray-50 min-h-screen dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border border-gray-200 dark:border-gray-700">
-            <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                <div v-if="cartItems.length > 0" class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border dark:border-gray-700">
-                    <div class="p-6 space-y-4">
+        <div class="bg-gray-50 dark:bg-gray-800 h-[calc(100vh-14.5rem)] md:h-[calc(100vh-12.5rem)] overflow-hidden shadow-sm sm:rounded-xl border border-gray-200 dark:border-gray-700 p-2">
+            <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 h-full">
+                <div v-if="cartItems.length > 0" class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-xl border dark:border-gray-700 h-full flex flex-col">
+                    <div class="p-6 h-full overflow-y-auto pe-1 space-y-4 custom-scrollbar">
                         <div v-for="item in cartItems" :key="item.id" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b dark:border-gray-700 pb-4 last:border-0">
                             <div class="flex items-center gap-4 min-w-0">
                                 <img v-if="item.listing.image" :src="'/storage/' + item.listing.image" class="w-16 h-16 object-cover rounded-lg" />
@@ -128,7 +121,7 @@ const processCheckout = () => {
                     </div>
                 </div>
 
-                <div v-else class="text-center py-20 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed dark:border-gray-700">
+                <div v-else class="h-full text-center py-20 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed dark:border-gray-700">
                     <p class="text-4xl mb-4">🐣</p>
                     <h3 class="text-lg font-bold">Your cart is empty</h3>
                     <Link :href="route('listings.index')" class="text-orange-600 font-bold hover:underline">Go find some chickens!</Link>

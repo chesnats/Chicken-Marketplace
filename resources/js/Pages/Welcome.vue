@@ -91,8 +91,8 @@ const submitRegister = () => {
                 </div>
                 <h1 class="text-6xl font-extrabold mb-8 leading-tight">Premium Chicken Marketplace</h1>
                 <p class="text-2xl text-orange-100 font-medium">
-                    The safest place to buy and sell quality breeds. <br>
-                    Quality birds, verified sellers, and secure transactions.
+                    A single trusted seller serving many buyers. <br>
+                    Quality birds, simple ordering, and secure transactions.
                 </p>
                 <div class="mt-16 border-t border-orange-500/50 pt-12">
                     <p class="italic text-orange-200 text-xl font-semibold">
@@ -113,7 +113,7 @@ const submitRegister = () => {
                     <div v-if="isLogin" key="login">
                         <div class="mb-8">
                             <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Welcome Back</h2>
-                            <p class="text-gray-500 dark:text-gray-300 text-sm mt-2">Log in to browse the marketplace.</p>
+                            <p class="text-gray-500 dark:text-gray-300 text-sm mt-2">Log in to order from our official seller.</p>
                         </div>
 
                         <form @submit.prevent="submitLogin" class="space-y-4">

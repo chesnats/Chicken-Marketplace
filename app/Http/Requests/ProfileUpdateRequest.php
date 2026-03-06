@@ -25,6 +25,14 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'seller_default_location' => $this->user() && $this->user()->role === 'seller'
+                ? ['required', 'string', 'max:255']
+                : ['nullable', 'string', 'max:255'],
+            'seller_contact_number' => $this->user() && $this->user()->role === 'seller'
+                ? ['required', 'string', 'max:20']
+                : ['nullable', 'string', 'max:20'],
         ];
     }
 }
+
+
